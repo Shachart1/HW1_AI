@@ -1,7 +1,7 @@
 import ex1
 import search
 import time
-
+import math
 
 def timeout_exec(func, args=(), kwargs={}, timeout_duration=10, default=None):
     """This function will spawn a thread and run the given function

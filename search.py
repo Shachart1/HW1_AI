@@ -15,6 +15,8 @@ import math
 import random
 import sys
 import bisect
+import heapq
+
 
 infinity = float('inf')
 
@@ -149,6 +151,14 @@ def astar_search(problem, h=None):
     # Memoize this function for better performance
     f = memoize(lambda n: n.path_cost + h(n), 'f')
 
+    # Initializing the heap
+    nodes_heap = heapq.heapify([]) # heapq is python's implementation of heap
+    nodes_count = 1
+    node = problem.root
+    # it is advised in the documentation to use tuples with three elements - the value to sort by, an index to break ties, the object we wish to save in the heap
+    heapq.push(nodes_heap, (node.h, nodes_count, node))
+    
     # TODO: Implement the rest of the A* search algorithm
-
+    
+    
     return None
