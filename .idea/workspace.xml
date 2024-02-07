@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="7142c0a5-2f22-4f7b-b903-32ed16f5993b" name="Changes" comment="Ilan's changes and hash abilities">
+    <list default="true" id="7142c0a5-2f22-4f7b-b903-32ed16f5993b" name="Changes" comment="new format for actions">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ex1.py" beforeDir="false" afterPath="$PROJECT_DIR$/ex1.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/search.py" beforeDir="false" afterPath="$PROJECT_DIR$/search.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -61,7 +62,14 @@
       <option name="project" value="LOCAL" />
       <updated>1707246486820</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="new format for actions">
+      <created>1707297770047</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1707297770047</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -79,6 +87,7 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="initial commit" />
     <MESSAGE value="Ilan's changes and hash abilities" />
-    <option name="LAST_COMMIT_MESSAGE" value="Ilan's changes and hash abilities" />
+    <MESSAGE value="new format for actions" />
+    <option name="LAST_COMMIT_MESSAGE" value="new format for actions" />
   </component>
 </project>
