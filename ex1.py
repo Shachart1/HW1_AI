@@ -20,7 +20,7 @@ class State:
         # self.marineships_current = dict([(list(marineships.keys())[i], 0) for i in range(len(marineships.keys()))])
         self.pirateships = pirateships
         if collected is None:
-            collected = set()
+            self.collected = set()
         else:
             self.collected = collected
         if on_ship is None:
@@ -30,7 +30,7 @@ class State:
         self.h_value = float('inf')
 
     # TODO - is this the definitions we want to go with?
-    def __lt__(self, other: State):
+    def __lt__(self, other):
         return self.h_value < other.h_value
 
     def __hash__(self):
@@ -46,6 +46,10 @@ class State:
 
 class OnePieceProblem(search.Problem):
 
+    def root_builder(self, marineships: dict): # I added these so the state saves only the initial location of marine ships
+        initial_location = {(key, (0, len(marineships.get(key)))) for key in marineships.keys()}
+        return initial_location
+
     def __init__(self, initial):
         search.Problem.__init__(self, initial)
         """
@@ -54,13 +58,12 @@ class OnePieceProblem(search.Problem):
         self.treasures = initial.get("treasures")
         self.maps = initial.get("map")
         self.marine_locations_array = initial.get("marine_ships") #addition for the functions
-        self.root = search.Node(State(initial.get("pirate_ships"), root_builder(initial.get("marine_ships"))))
+        marins_test = {key: (0, initial.get("marine_ships").get(key)) for key in
+                                                        initial.get("marine_ships").keys()}
+        test = initial.get("pirate_ship")
+        self.root = search.Node(State(marins_test, test))
         self.columns = len(self.maps[0])
         self.rows = len(self.maps)
-
-    def root_builder(self, marineships: dict): # I added these so the state saves only the initial location of marine ships
-        initial_location = {(key, (0, len(marineships.get(key)))) for key in marineships.keys()}
-        return initial_location
 
     def actions(self, state: State):
         """Returns all the actions that can be executed in the given
@@ -87,10 +90,11 @@ class OnePieceProblem(search.Problem):
         self.actions(state)."""
         
         # TODO - implementing these
-        new_state = duplicate_state(self, state)
-        move_marine(self, new_state, new_marine_location)
+        new_state = duplicate_state(state)
+        move_marine(new_state, new_marine_location)
         if action[0] == "sail":
             new_state.pirateships[action[1]] = action[2]
+            pirates_marine_encounter(new_state, action[1], action[2])
         elif action[0] == "collect_treasure":
             new_state.onship[action[1]].add(action[2])
         elif action[0] == "deposit_treasures":
@@ -167,37 +171,17 @@ class OnePieceProblem(search.Problem):
     def move_marine(self, new_state: State):
         for ship in new_state.marineships:
             current_index_in_location_array = new_state.marineships[ship][0]
-            location_array_size = len(new_state.marineships[ship][1])
-            new_state.marineships[ship] = ((current_index_in_location_array + 1), location_array_size)
+            location_array = new_state.marineships[ship][1]
+            new_state.marineships[ship] = ((current_index_in_location_array + 1), len(location_array))
+            marine_pirates_encounter(new_state, location_array[current_index_in_location_array + 1])
 
-    def move_ship(self, action, new_state):
-        # for act in action: #assuming it is a tuple of 2/3 indexes, depends on the action
-        if act[0] == "sail":
-            new_state.pirateships[act[1]] = act[2] #they said that the new location would be the third index of a tuple
+    def marine_pirates_encounter(self, new_state: State, location: str):
+        pass
 
-    def collect_treasure(self, action, new_state): #we might want to combine these three functions
-        # for act in action:
-        if act[0] == "collect_treasure":
-            new_state.onship[act[1]].add(act[2])
-
-    def deposit_treasures(self, action, new_state):
-        # for act in action:
-         if act[0] == "deposit_treasures":
-            new_state.collected.add(treasure for treasure in new_state.onship[act[1]]) #hopefully it adds the elements of the list and not the list itself
-            new_state.onship[act[1]] = set() #now the pirateship is empty
-
-    #potentiallly this function will be instead of the previous three
-    def move_ship2(self,action,new_state):
-        # for act in action:
-            # if act[0] == "wait":
-            #     continue
-        if act[0] == "sail":
-            new_state.pirateships[act[1]] = act[2]
-        if act[0] == "collect_treasure":
-            new_state.onship[act[1]].add(act[2])
-        if act[0] == "deposit_treasures": #might be an "else" but i've thought that the input might have a mistake
-            new_state.collected.add(treasure for treasure in new_state.onship[act[1]]) #hopefully it adds the elements of the list and not the list itself
-            new_state.onship[act[1]] = [] #now the ship is empty
+    def pirates_marine_encounter(self, new_state: State, pirate: str, location: str):
+        for ship in new_state.marineships:
+            pass
+        pass
 
     """Feel free to add your own functions
     (-2, -2, None) means there was a timeout"""
