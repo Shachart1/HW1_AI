@@ -183,6 +183,12 @@ class OnePieceProblem(search.Problem):
             pass
         pass
 
+    def h_1(self,node):
+        uncollected = self.treasures.difference(node.set.collected) #works only on sets
+        return len(uncollected)
+
+
+
     """Feel free to add your own functions
     (-2, -2, None) means there was a timeout"""
 
