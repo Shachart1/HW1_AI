@@ -153,12 +153,16 @@ class OnePieceProblem(search.Problem):
             self.marine_pirates_encounter(new_state, location_array[current_index_in_location_array])
 
     def marine_pirates_encounter(self, new_state: State, location: str):
-        pass
+        for pirate in new_state.pirateships.keys():
+            if new_state.pirateships[pirate] == location:
+                new_state.on_ship[pirate] = set()
 
     def pirates_marine_encounter(self, new_state: State, pirate: str, location: str):
-        for ship in new_state.marineships:
-            pass
-        pass
+        for marine in new_state.marineships.keys():
+            marine_locations_array = new_state.marineships[marine][1]
+            marine_index = new_state.marineships[marine][0]
+            if marine_locations_array[marine_index] == location:
+                new_state.on_ship[pirate] = set()
 
     def get_actions_for_ship(self, state, ship):
         actions = []
