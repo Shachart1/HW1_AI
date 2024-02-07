@@ -131,7 +131,14 @@ class OnePieceProblem(search.Problem):
 
     def h_1(self, node: search.Node):
         uncollected = self.treasures.difference(node.state.collected) # works only on sets
-        return len(uncollected)
+        return float(len(uncollected) / len(self.pirateships))
+
+    def h_2(self,node):
+
+        for key in self.treasures.keys:
+            idx = self.treasures[key]
+            treasure_frame = possible_frame(int(idx[0]),int(idx[1])) #need to think how to implement
+
 
 
     """ action providers """
@@ -172,9 +179,9 @@ class OnePieceProblem(search.Problem):
     def possible_frame(self, row, col):
         if row == 0:
             if col == (self.columns - 1):
-                return [[1,col],[row,col-1]]
+                return [[row+1,col],[row,col-1]] ##############
             if col == 0:
-                return [[row + 1, col +1],[row, col + 1]]
+                return [[row + 1, col],[row, col + 1]] ################
             else:
                 return [[row - 1, col],[row, col - 1], [row, col+1]]
 
@@ -187,7 +194,8 @@ class OnePieceProblem(search.Problem):
                 return [[row, col - 1], [row - 1, col]]
 
             else:
-                return [[row, col - 1], [row - 1, col],[row, col + 1]]
+                return [[row, col - 1], [row + 1, col],[row, col + 1]] ##changed
+
         else:
             return [[row+1, col], [row-1, col], [row, col - 1], [row, col+1]]
 
