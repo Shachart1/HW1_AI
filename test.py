@@ -18,7 +18,8 @@ def main():
     print("HELLO")
     actions = onePiece.actions(onePiece.root.state)
     print(actions)
-    # print(onePiece.result(actions))
+    print(actions[1])
+    print(onePiece.result(onePiece.root.state, actions[1]))
 
 if __name__ == '__main__':
     main()
