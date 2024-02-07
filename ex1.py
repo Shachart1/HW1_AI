@@ -3,7 +3,7 @@ import random
 
 ids = ["208114744", "206394280"]
 
-
+# TESTING
 class State:
     """
         marineships - dict with name of ship and it's movment
