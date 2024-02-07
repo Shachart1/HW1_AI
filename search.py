@@ -86,7 +86,7 @@ class Node:
     an explanation of how the f and h values are handled. You will not need to
     subclass this class."""
 
-    def __init__(self, state, parent=None, action=None, path_cost=0):
+    def __init__(self, state: State, parent=None, action=None, path_cost=0):
         """Create a search tree Node, derived from a parent by an action."""
         self.state = state
         self.parent = parent
@@ -152,10 +152,14 @@ def astar_search(problem, h=None):
     f = memoize(lambda n: n.path_cost + h(n), 'f')
 
     # Initializing the heap
-    nodes_heap = heapq.heapify([]) # heapq is python's implementation of heap
+    nodes_heap = []
+    # heapq.heapify(nodes_heap)
     nodes_count = 1
     node = problem.root
-    # it is advised in the documentation to use tuples with three elements - the value to sort by, an index to break ties, the object we wish to save in the heap
+    # it is advised in the documentation to use tuples with three elements -
+    # the value to sort by
+    # tie breaking value
+    # the object we wish to save in the heap
     heapq.push(nodes_heap, (node.h, nodes_count, node))
     
     # TODO: Implement the rest of the A* search algorithm
