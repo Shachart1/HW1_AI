@@ -65,58 +65,6 @@ class OnePieceProblem(search.Problem):
         self.columns = len(self.maps[0])
         self.rows = len(self.maps)
 
-    def actions(self, state: State):
-        """Returns all the actions that can be executed in the given
-        state. The result should be a tuple (or other iterable) of actions
-        as defined in the problem description file"""
-        # marine ships will always move
-        for ship in state.marineships.keys():
-            if state.marineships[ship][0] == len(state.marineships[ship][1]) - 1:
-                state.marineships[ship][1].reverse()
-                state.marineships[ship][0] = 0
-        actions = []
-        
-        #TODO - implementing these
-        actions_by_ship = []
-        for ship in self.pirateships.keys():
-            actions_by_ship.add(get_actions_for_ship(ship))
-        actions = list(product(*actions_by_ship))
-
-        return actions
-
-    def result(self, state, action):
-        """Return the state that results from executing the given
-        action in the given state. The action must be one of
-        self.actions(state)."""
-        
-        # TODO - implementing these
-        new_state = duplicate_state(state)
-        move_marine(new_state, new_marine_location)
-        if action[0] == "sail":
-            new_state.pirateships[action[1]] = action[2]
-            pirates_marine_encounter(new_state, action[1], action[2])
-        elif action[0] == "collect_treasure":
-            new_state.onship[action[1]].add(action[2])
-        elif action[0] == "deposit_treasures":
-            new_state.collected.add(treasure for treasure in new_state.onship[action[1]])
-            new_state.onship[action[1]] = set()  # now the pirateship is empty
-        return new_state
-
-    def goal_test(self, state):
-        """ Given a state, checks if all treasures have been collected """
-
-        for treasure in self.treasures.keys():
-            if treasure not in state.collected:
-                return False
-        return True
-
-    def h(self, node: search.Node):
-        """ This is the heuristic. It gets a node (not a state,
-        state can be accessed via node.state)
-        and returns a goal distance estimate"""
-        node.state.h_value = 0
-        return 0
-    
     """ action providers """
     # in all of these we can change the elements type from str if we find a better way to represent an action. maybe tuple?
     def get_actions_for_ship(ship):
@@ -162,11 +110,6 @@ class OnePieceProblem(search.Problem):
 
     """ action activators """
     # in all of these we need to change 'new_state' based on the action provided
-    def move_marine(self, new_state, new_marine_location):
-        for ship in self.marineships_current:
-            new_state.marineships[ship] = new_marine_location[ship]
-    # new_state.marineships[ship] = self.marine_locations.get(ship)[self.new_marine_location.get(ship)]
-    # new_marine_location is the new location and not index
 
     def move_marine(self, new_state: State):
         for ship in new_state.marineships:
@@ -183,8 +126,61 @@ class OnePieceProblem(search.Problem):
             pass
         pass
 
-    def h_1(self,node):
-        uncollected = self.treasures.difference(node.set.collected) #works only on sets
+    def actions(self, state: State):
+        """Returns all the actions that can be executed in the given
+        state. The result should be a tuple (or other iterable) of actions
+        as defined in the problem description file"""
+        # marine ships will always move
+        for ship in state.marineships.keys():
+            if state.marineships[ship][0] == len(state.marineships[ship][1]) - 1:
+                state.marineships[ship][1].reverse()
+                state.marineships[ship][0] = 0
+        actions = []
+        
+        #TODO - implementing these
+        actions_by_ship = []
+        for ship in state.pirateships.keys():
+            actions_by_ship.append(get_actions_for_ship(ship))
+        actions = list(product(*actions_by_ship))
+
+        return actions
+
+    def result(self, state, action):
+        """Return the state that results from executing the given
+        action in the given state. The action must be one of
+        self.actions(state)."""
+        
+        # TODO - implementing these
+        new_state = duplicate_state(state)
+        move_marine(new_state, new_marine_location)
+        if action[0] == "sail":
+            new_state.pirateships[action[1]] = action[2]
+            pirates_marine_encounter(new_state, action[1], action[2])
+        elif action[0] == "collect_treasure":
+            new_state.onship[action[1]].add(action[2])
+        elif action[0] == "deposit_treasures":
+            new_state.collected.add(treasure for treasure in new_state.onship[action[1]])
+            new_state.onship[action[1]] = set()  # now the pirateship is empty
+        return new_state
+
+    def goal_test(self, state):
+        """ Given a state, checks if all treasures have been collected """
+
+        for treasure in self.treasures.keys():
+            if treasure not in state.collected:
+                return False
+        return True
+
+    def h(self, node: search.Node):
+        """ This is the heuristic. It gets a node (not a state,
+        state can be accessed via node.state)
+        and returns a goal distance estimate"""
+        node.state.h_value = 0
+        return 0
+
+
+    def h_1(self, node: search.Node):
+        uncollected = self.treasures.difference(node.state.collected) # works only on sets
         return len(uncollected)
 
 

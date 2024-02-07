@@ -16,8 +16,8 @@ test_game = {
 def main():
     onePiece = ex1.create_onepiece_problem(test_game)
     print("HELLO")
-    # actions = onePiece.actions()
-    # print(actions)
+    actions = onePiece.actions(onePiece.root.state)
+    print(actions)
     # print(onePiece.result(actions))
 
 if __name__ == '__main__':
