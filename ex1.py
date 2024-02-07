@@ -65,49 +65,6 @@ class OnePieceProblem(search.Problem):
         self.columns = len(self.maps[0])
         self.rows = len(self.maps)
 
-    """ action providers """
-    # in all of these we can change the elements type from str if we find a better way to represent an action. maybe tuple?
-    def get_actions_for_ship(ship):
-        actions = []
-        row_index = self.pirateships.get(ship)[0]
-        col_index = self.pirateships.get(ship)[1]
-        if self.maps[row_index,col_index] == 'B': #if current location is at base it can deposit
-            actions.append((ship,("deposit",str(ship),(row_index,col_index))))
-        ship_frame = possible_frame(row_index,col_index)
-        for step in ship_frame:
-            if self.maps[step] == 'S' or self.maps[step] == 'B':
-                actions.append((ship, ("sail",str(ship),(step[0],step[1])))) #not sure if necessary to string it
-            else: #if it is "I"
-                actions.append((ship,("collect",str(ship),(step[0],step[1]))))
-        return actions
-
-
-
-    def possible_frame(row,col):
-        if row == 0:
-            if col == (self.columns - 1):
-                return [[1,col],[row,col-1]]
-            if col == 0:
-                return [[row + 1, col +1],[row, col + 1]]
-            else:
-                return [[row - 1, col],[row, col - 1], [row, col+1]]
-
-
-        elif row == (self.rows - 1):
-            if col == 0:
-                return [[row, col + 1],[row -1, col]]
-
-            if col == (self.columns -1): #down right edge
-                return [[row, col - 1], [row - 1, col]]
-
-            else:
-                return [[row, col - 1], [row - 1, col],[row, col + 1]]
-        else:
-            return [[row+1,col],[row-1,col],[row,col - 1],[row,col+1]]
-
-
-
-
     """ action activators """
     # in all of these we need to change 'new_state' based on the action provided
 
@@ -140,7 +97,7 @@ class OnePieceProblem(search.Problem):
         #TODO - implementing these
         actions_by_ship = []
         for ship in state.pirateships.keys():
-            actions_by_ship.append(get_actions_for_ship(ship))
+            actions_by_ship.append(self.get_actions_for_ship(state, ship))
         actions = list(product(*actions_by_ship))
 
         return actions
@@ -184,7 +141,45 @@ class OnePieceProblem(search.Problem):
         return len(uncollected)
 
 
+    """ action providers """
+    # in all of these we can change the elements type from str if we find a better way to represent an action. maybe tuple?
+    def get_actions_for_ship(self, state, ship):
+        actions = []
+        row_index = state.pirateships.get(ship)[0]
+        col_index = state.pirateships.get(ship)[1]
+        if self.maps[row_index,col_index] == 'B': #if current location is at base it can deposit
+            actions.append((ship,("deposit",str(ship),(row_index,col_index))))
+        ship_frame = possible_frame(row_index,col_index)
+        for step in ship_frame:
+            if self.maps[step] == 'S' or self.maps[step] == 'B':
+                actions.append((ship, ("sail",str(ship),(step[0],step[1])))) #not sure if necessary to string it
+            else: #if it is "I"
+                actions.append((ship,("collect",str(ship),(step[0],step[1]))))
+        return actions
 
+
+
+    def possible_frame(self, row, col):
+        if row == 0:
+            if col == (self.columns - 1):
+                return [[1,col],[row,col-1]]
+            if col == 0:
+                return [[row + 1, col +1],[row, col + 1]]
+            else:
+                return [[row - 1, col],[row, col - 1], [row, col+1]]
+
+
+        elif row == (self.rows - 1):
+            if col == 0:
+                return [[row, col + 1],[row -1, col]]
+
+            if col == (self.columns -1): #down right edge
+                return [[row, col - 1], [row - 1, col]]
+
+            else:
+                return [[row, col - 1], [row - 1, col],[row, col + 1]]
+        else:
+            return [[row+1,col],[row-1,col],[row,col - 1],[row,col+1]]
     """Feel free to add your own functions
     (-2, -2, None) means there was a timeout"""
 
