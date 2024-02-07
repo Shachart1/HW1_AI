@@ -5,7 +5,7 @@ ids = ["208114744", "206394280"]
 
 class State:
     """
-        marineships - dict with name of ship and it's movment
+        marineships - dict with name of ship and it's movement
         pirateships - dict with name of ship and it's location
         collected - set of collected treasures
         on_ship - dict where key is ship ID and value is treasures on ship
@@ -64,6 +64,12 @@ class OnePieceProblem(search.Problem):
         actions = []
         
         #TODO - implementing these
+        actions_by_ship = []
+        for ship in self.pirateships.keys():
+            actions_by_ship.add(get_actions_for_ship(ship))
+        actions = all_permotations(actions_by_ship)
+
+
         actions.add(move_actions(self, state))
         actions.add(collect_actions(self, state))
         actions.add(store_actions(self, state))
