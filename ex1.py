@@ -1,5 +1,7 @@
 import search
 import random
+from itertools import product
+
 
 ids = ["208114744", "206394280"]
 
@@ -52,6 +54,9 @@ class OnePieceProblem(search.Problem):
         self.maps = initial.get("map")
         self.marine_locations = initial.get("marine_ships") #addition for the functions
         self.root = search.Node(State(initial.get("pirate_ships"),root_builder(initial.get("marine_ships"))))
+        self.columns = len(self.maps[0])
+        self.rows = len(self.maps)
+
 
     def root_builder(dict:marineships): # I added these so the state saves only the initial location of marine ships
         initial_location = {key: value[0] for key, value in marineships.items()}
@@ -67,12 +72,8 @@ class OnePieceProblem(search.Problem):
         actions_by_ship = []
         for ship in self.pirateships.keys():
             actions_by_ship.add(get_actions_for_ship(ship))
-        actions = all_permotations(actions_by_ship)
+        actions = list(product(*actions_by_ship))
 
-
-        actions.add(move_actions(self, state))
-        actions.add(collect_actions(self, state))
-        actions.add(store_actions(self, state))
         return actions
 
     def result(self, state, action):
@@ -118,15 +119,47 @@ class OnePieceProblem(search.Problem):
     
     """ action providers """
     # in all of these we can change the elements type from str if we find a better way to represent an action. maybe tuple?
-    def move_actions(self, state) -> List[str]:
-        raise NotImplementedError
-        
-    def collect_actions(self, state) -> List[str]:
-        raise NotImplementedError
-        
-    def store_actions(self, state) -> List[str]:
-        raise NotImplementedError
-        
+    def get_actions_for_ship(ship):
+        actions = []
+        row_index = self.pirateships.get(ship)[0]
+        col_index = self.pirateships.get(ship)[1]
+        if self.maps[row_index,col_index] == 'B': #if current location is at base it can deposit
+            actions.append((ship,("deposit",str(ship),(row_index,col_index))))
+        ship_frame = possible_frame(row_index,col_index)
+        for step in ship_frame:
+            if self.maps[step] == 'S' or self.maps[step] == 'B':
+                actions.append((ship, ("sail",str(ship),(step[0],step[1])))) #not sure if necessary to string it
+            else: #if it is "I"
+                actions.append((ship,("collect",str(ship),(step[0],step[1]))))
+        return actions
+
+
+
+    def possible_frame(row,col):
+        if row == 0:
+            if col == (self.columns - 1):
+                return [[1,col],[row,col-1]]
+            if col == 0:
+                return [[row + 1, col +1],[row, col + 1]]
+            else:
+                return [[row - 1, col],[row, col - 1], [row, col+1]]
+
+
+        elif row == (self.rows - 1):
+            if col == 0:
+                return [[row, col + 1],[row -1, col]]
+
+            if col == (self.columns -1): #down right edge
+                return [[row, col - 1], [row - 1, col]]
+
+            else:
+                return [[row, col - 1], [row - 1, col],[row, col + 1]]
+        else:
+            return [[row+1,col],[row-1,col],[row,col - 1],[row,col+1]]
+
+
+
+
     """ action activators """
     # in all of these we need to change 'new_state' based on the action provided
     def move_marine(self, new_state, new_marine_location):
