@@ -147,7 +147,9 @@ class OnePieceProblem(search.Problem):
         """ This is the heuristic. It gets a node (not a state,
         state can be accessed via node.state)
         and returns a goal distance estimate"""
-        node.state.h_value = 0
+        new_state = State.from_hashable(node.state)
+        new_state.h_value = 0
+        node.state = new_state.to_hashable()
         return 0
 
 

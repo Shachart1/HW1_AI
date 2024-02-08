@@ -22,9 +22,5 @@ def main():
     onePiece.root.state.on_ship["pirate_ship_1"].add("treasure_1")
     print(onePiece.result(onePiece.root.state, actions[1]))
 
-    str_of_state = onePiece.root.state.to_hashable()
-    print(str_of_state)
-    print(ex1.State.from_hashable(str_of_state))
-
 if __name__ == '__main__':
     main()
