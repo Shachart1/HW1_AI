@@ -93,20 +93,22 @@ class OnePieceProblem(search.Problem):
         self.root = search.Node(State(marins_test, test))
         self.columns = len(self.maps[0])
         self.rows = len(self.maps)
+        self.base = (initial.get("pirate_ship")[0]).get() #this should return the location of the base
 
     """ action activators """
     # in all of these we need to change 'new_state' based on the action provided
 
-    def actions(self, state: State):
+    def actions(self, state: str):
         """Returns all the actions that can be executed in the given
         state. The result should be a tuple (or other iterable) of actions
         as defined in the problem description file"""
+        new_state = State.to_hashable(state)
         actions = []
         
         #TODO - implementing these
         actions_by_ship = []
-        for ship in state.pirateships.keys():
-            actions_by_ship.append(self.get_actions_for_ship(state, ship))
+        for ship in new_state.pirateships.keys():
+            actions_by_ship.append(self.get_actions_for_ship(new_state, ship))
         actions = list(product(*actions_by_ship))
 
         return actions
@@ -132,9 +134,9 @@ class OnePieceProblem(search.Problem):
 
     def goal_test(self, state):
         """ Given a state, checks if all treasures have been collected """
-
+        new_state = State.from_hashable(state)
         for treasure in self.treasures.keys():
-            if treasure not in state.collected:
+            if treasure not in new_state.collected:
                 return False
         return True
 
@@ -149,14 +151,44 @@ class OnePieceProblem(search.Problem):
 
 
     def h_1(self, node: search.Node):
-        uncollected = self.treasures.difference(node.state.collected) # works only on sets
+        new_state = State.from_hashable(node.state)
+        uncollected = self.treasures.difference(new_state.collected) # works only on sets
         return float(len(uncollected) / len(self.pirateships))
 
     def h_2(self,node):
+        distances = manhattan_distance_blocked(self.maps,self.base,'I')
+        treasure_dict = {key: distances[int(location[0])][int(location[1])] for key, location in self.treasures.items()}
 
-        for key in self.treasures.keys:
-            idx = self.treasures[key]
-            treasure_frame = possible_frame(int(idx[0]),int(idx[1])) #need to think how to implement
+
+
+    def manhattan_distance_blocked(map, start, blocked):
+        rows, cols = len(map), len(map[0])
+        distances = [[float('inf')] * cols for _ in range(rows)]
+        visited = [[False] * cols for _ in range(rows)]
+
+        queue = [(start[0], start[1], 0)]  # (row, col, distance)
+        distances[start[0]][start[1]] = 0
+
+        while queue:
+            current_row, current_col, current_distance = queue.pop(0)
+            visited[current_row][current_col] = True
+
+            neighbors = [
+                (current_row - 1, current_col),
+                (current_row + 1, current_col),
+                (current_row, current_col - 1),
+                (current_row, current_col + 1),
+            ]
+
+            for neighbor_row, neighbor_col in neighbors:
+                if 0 <= neighbor_row < rows and 0 <= neighbor_col < cols and not visited[neighbor_row][neighbor_col] and \
+                        map[neighbor_row][neighbor_col] != blocked:
+                    new_distance = current_distance + 1
+                    if new_distance < distances[neighbor_row][neighbor_col]:
+                        distances[neighbor_row][neighbor_col] = new_distance
+                        queue.append((neighbor_row, neighbor_col, new_distance))
+
+        return distances
 
 
 
@@ -164,9 +196,9 @@ class OnePieceProblem(search.Problem):
     # in all of these we can change the elements type from str if we find a better way to represent an action. maybe tuple?
     def move_marine(self, new_state: State):
         for ship in new_state.marineships:
-            if state.marineships[ship][0] == len(state.marineships[ship][1]) - 1:
-                state.marineships[ship][1].reverse()
-                state.marineships[ship][0] = 0
+            if new_state.marineships[ship][0] == len(new_state.marineships[ship][1]) - 1:
+                new_state.marineships[ship][1].reverse()
+                new_state.marineships[ship][0] = 0
 
             current_index_in_location_array = new_state.marineships[ship][0]
             location_array = new_state.marineships[ship][1]
