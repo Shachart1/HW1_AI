@@ -102,10 +102,6 @@ class OnePieceProblem(search.Problem):
         state. The result should be a tuple (or other iterable) of actions
         as defined in the problem description file"""
         # marine ships will always move
-        for ship in state.marineships.keys():
-            if state.marineships[ship][0] == len(state.marineships[ship][1]) - 1:
-                state.marineships[ship][1].reverse()
-                state.marineships[ship][0] = 0
         actions = []
         
         #TODO - implementing these
@@ -169,6 +165,10 @@ class OnePieceProblem(search.Problem):
     # in all of these we can change the elements type from str if we find a better way to represent an action. maybe tuple?
     def move_marine(self, new_state: State):
         for ship in new_state.marineships:
+            if state.marineships[ship][0] == len(state.marineships[ship][1]) - 1:
+                state.marineships[ship][1].reverse()
+                state.marineships[ship][0] = 0
+
             current_index_in_location_array = new_state.marineships[ship][0]
             location_array = new_state.marineships[ship][1]
             current_index_in_location_array += 1

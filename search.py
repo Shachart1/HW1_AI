@@ -161,7 +161,9 @@ def astar_search(problem, h=None):
     # tie breaking value
     # the object we wish to save in the heap
     heapq.push(nodes_heap, (node.h, nodes_count, node))
-    
+    while len(nodes_heap) > 0:
+        current_node = heapq.heappop(nodes_heap)
+        # TODO - check if in "CLOSED"
     # TODO: Implement the rest of the A* search algorithm
     
     
