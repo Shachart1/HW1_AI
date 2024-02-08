@@ -101,7 +101,6 @@ class OnePieceProblem(search.Problem):
         """Returns all the actions that can be executed in the given
         state. The result should be a tuple (or other iterable) of actions
         as defined in the problem description file"""
-        # marine ships will always move
         actions = []
         
         #TODO - implementing these
