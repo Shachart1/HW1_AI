@@ -14,7 +14,8 @@ class State:
         collected - set of collected treasures
         on_ship - dict where key is ship ID and value is treasures on ship
     """
-    def __init__(self, marineships: dict, pirateships: dict, collected: set = None, on_ship: dict = None): #not sure if marine ships is necessary
+    def __init__(self, marineships: dict, pirateships: dict,
+                 collected: set = None, on_ship: dict = None, h_value: float = float("inf")): #not sure if marine ships is necessary
         self.marineships = marineships
         # current index of marineships in it's movment array.
 
@@ -28,7 +29,7 @@ class State:
             self.on_ship = dict([(list(pirateships.keys())[i], set()) for i in range(len(pirateships.keys()))]) #not sure if needed argument on_ship
         else:
             self.on_ship = on_ship
-        self.h_value = float('inf')
+        self.h_value = h_value
 
     # TODO - is this the definitions we want to go with?
     def __lt__(self, other):
@@ -50,6 +51,27 @@ class State:
         to_print += "\n collected treasures: " + str(self.collected)
         to_print += "\n treasures on ships: " + str(self.on_ship)
         return to_print
+
+    def to_hashable(self):
+        state_dict = {
+            "marineships": str(self.marineships),
+            "pirateships": str(self.pirateships),
+            "collected": str(self.collected),
+            "on_ship": str(self.on_ship),
+            "h_value": str(self.h_value)
+        }
+        return str(state_dict)
+
+    @classmethod
+    def from_hashable(cls, hashable_string: str):
+        state_dictionary = eval(hashable_string)
+        marineships = eval(state_dictionary["marineships"])
+        pirateships = eval(state_dictionary["pirateships"])
+        collected = eval(state_dictionary["collected"])
+        on_ship = eval(state_dictionary["on_ship"])
+        h_value = float(state_dictionary["h_value"])
+        return State(marineships, pirateships, collected, on_ship, h_value)
+
 
 class OnePieceProblem(search.Problem):
 
