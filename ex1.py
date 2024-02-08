@@ -15,9 +15,9 @@ class State:
         on_ship - dict where key is ship ID and value is treasures on ship
     """
     def __init__(self, marineships: dict, pirateships: dict,
-                 collected: set = None, on_ship: dict = None, h_value: float = float("inf")): #not sure if marine ships is necessary
+                 collected: set = None, on_ship: dict = None):  # not sure if marine ships is necessary
         self.marineships = marineships
-        # current index of marineships in it's movment array.
+        # current index of marineships in its movement array.
 
         # self.marineships_current = dict([(list(marineships.keys())[i], 0) for i in range(len(marineships.keys()))])
         self.pirateships = pirateships
@@ -29,21 +29,20 @@ class State:
             self.on_ship = dict([(list(pirateships.keys())[i], set()) for i in range(len(pirateships.keys()))]) #not sure if needed argument on_ship
         else:
             self.on_ship = on_ship
-        self.h_value = h_value
 
     # TODO - is this the definitions we want to go with?
-    def __lt__(self, other):
-        return self.h_value < other.h_value
-
-    def __hash__(self):
-        return len(collected)
-
-    def __eq__(self, other):
-        flag = set(self.marineships.keys()).intersection(set(other.marineships.keys())) == set()
-        flag = flag and (self.marineships[key] == other.marineships[key] for key in self.marineships.keys())
-        flag = flag and (self.pirateships[key] == other.pirateships[key] for key in self.pirateships.keys())
-        flag = flag and (self.collected.intersection(other.collected) == set())
-        return flag and (self.on_ship == other.on_ship)
+    # def __lt__(self, other):
+    #     return self.h_value < other.h_value
+    #
+    # def __hash__(self):
+    #     return len(collected)
+    #
+    # def __eq__(self, other):
+    #     flag = set(self.marineships.keys()).intersection(set(other.marineships.keys())) == set()
+    #     flag = flag and (self.marineships[key] == other.marineships[key] for key in self.marineships.keys())
+    #     flag = flag and (self.pirateships[key] == other.pirateships[key] for key in self.pirateships.keys())
+    #     flag = flag and (self.collected.intersection(other.collected) == set())
+    #     return flag and (self.on_ship == other.on_ship)
 
     def __str__(self):
         to_print = "marine ships: " + str(self.marineships)
@@ -58,7 +57,6 @@ class State:
             "pirateships": str(self.pirateships),
             "collected": str(self.collected),
             "on_ship": str(self.on_ship),
-            "h_value": str(self.h_value)
         }
         return str(state_dict)
 
@@ -69,13 +67,13 @@ class State:
         pirateships = eval(state_dictionary["pirateships"])
         collected = eval(state_dictionary["collected"])
         on_ship = eval(state_dictionary["on_ship"])
-        h_value = float(state_dictionary["h_value"])
-        return State(marineships, pirateships, collected, on_ship, h_value)
+        return State(marineships, pirateships, collected, on_ship)
 
 
 class OnePieceProblem(search.Problem):
 
-    def root_builder(self, marineships: dict): # I added these so the state saves only the initial location of marine ships
+    def root_builder(self, marineships: dict):
+        # I added these so the state saves only the initial location of marine ships
         initial_location = {(key, (0, len(marineships.get(key)))) for key in marineships.keys()}
         return initial_location
 
@@ -86,7 +84,7 @@ class OnePieceProblem(search.Problem):
         """
         self.treasures = initial.get("treasures")
         self.maps = initial.get("map")
-        self.marine_locations_array = initial.get("marine_ships") #addition for the functions
+        self.marine_locations_array = initial.get("marine_ships") # addition for the functions
         marins_test = {key: (0, initial.get("marine_ships").get(key)) for key in
                                                         initial.get("marine_ships").keys()}
         test = initial.get("pirate_ship")
@@ -105,7 +103,7 @@ class OnePieceProblem(search.Problem):
         new_state = State.to_hashable(state)
         actions = []
         
-        #TODO - implementing these
+        #   TODO - implementing these
         actions_by_ship = []
         for ship in new_state.pirateships.keys():
             actions_by_ship.append(self.get_actions_for_ship(new_state, ship))
@@ -145,8 +143,6 @@ class OnePieceProblem(search.Problem):
         state can be accessed via node.state)
         and returns a goal distance estimate"""
         new_state = State.from_hashable(node.state)
-        new_state.h_value = 0
-        node.state = new_state.to_hashable()
         return 0
 
 

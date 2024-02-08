@@ -151,20 +151,25 @@ def astar_search(problem, h=None):
     # Memoize this function for better performance
     f = memoize(lambda n: n.path_cost + h(n), 'f')
 
-    # Initializing the heap
+    # Initializing the heap, the "CLOSED" set and the nodes counter
     nodes_heap = []
-    # heapq.heapify(nodes_heap)
+    nodes_set = set()
     nodes_count = 1
-    node = problem.root
+
+    root = problem.root
     # it is advised in the documentation to use tuples with three elements -
-    # the value to sort by
-    # tie breaking value
-    # the object we wish to save in the heap
-    heapq.push(nodes_heap, (node.h, nodes_count, node))
+    # the value to sort by, tie breaking value, the object we wish to save in the heap
+    heapq.push(nodes_heap, (f(root), nodes_count, root))
+    nodes_set.add(root)
+
     while len(nodes_heap) > 0:
         current_node = heapq.heappop(nodes_heap)
-        # TODO - check if in "CLOSED"
-    # TODO: Implement the rest of the A* search algorithm
-    
-    
+        possible_states_nodes = current_node.expand(problem)
+        for child_node in possible_states_nodes:
+            if problem.goal_test(child_node):
+                return child_node.solution()
+            if child_node.state not in nodes_set:
+                nodes_set.add(state)
+                nodes_count += 1
+                heapq.push(nodes_heap, (f(node), nodes_count, child_node))
     return None
