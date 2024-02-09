@@ -89,10 +89,10 @@ class OnePieceProblem(search.Problem):
         marins_test = {key: (0, initial.get("marine_ships").get(key)) for key in
                                                         initial.get("marine_ships").keys()}
         test = initial.get("pirate_ship")
-        self.root = search.Node(State(marins_test, test))
+        self.root = search.Node(State.to_hashable(State(marins_test, test)))
         self.columns = len(self.maps[0])
         self.rows = len(self.maps)
-        self.base = (initial.get("pirate_ship")[0]).get() #this should return the location of the base
+        self.base = initial.get("pirate_ship")[list(test.keys())[0]]
         self.treasure_holders = {key: None for key in self.treasures.keys()}
 
     """ action activators """
@@ -102,7 +102,7 @@ class OnePieceProblem(search.Problem):
         """Returns all the actions that can be executed in the given
         state. The result should be a tuple (or other iterable) of actions
         as defined in the problem description file"""
-        new_state = State.to_hashable(state)
+        new_state = State.from_hashable(state)
         actions = []
         
         #   TODO - implementing these
@@ -167,7 +167,7 @@ class OnePieceProblem(search.Problem):
             location_frame_dict = {key: value for key, value in location_frame}
         for treasure in treasure_dict.keys():
             if self.treasure_holders[treasure] != None:
-                new_state = State.to_hashable(Node.state)
+                new_state = State.from_hashable(Node.state)
                 treasure_dict[treasure] = min(treasure_dict[treasure], min_manhattan_around(distances,int(self.new_state.pirateships[self.treasure_holders[treasure]][0]),int(self.new_state.pirateships[self.treasure_holders[treasure]][1]))
 ) ## current_State should be saved
                 location_frame_dict[treasure].append(distances[int(new_state.pirateships[treasure_holders[treasure]][0]),int(new_state.pirateships[treasure_holders[treasure]][1])])
