@@ -3,7 +3,6 @@ import random
 from typing import List
 from itertools import product
 
-
 ids = ["208114744", "206394280"]
 
 
@@ -14,6 +13,7 @@ class State:
         collected - set of collected treasures
         on_ship - dict where key is ship ID and value is treasures on ship
     """
+
     def __init__(self, marineships: dict, pirateships: dict,
                  collected: set = None, on_ship: dict = None):  # not sure if marine ships is necessary
         self.marineships = marineships
@@ -26,7 +26,8 @@ class State:
         else:
             self.collected = collected
         if on_ship is None:
-            self.on_ship = dict([(list(pirateships.keys())[i], set()) for i in range(len(pirateships.keys()))]) #not sure if needed argument on_ship
+            self.on_ship = dict([(list(pirateships.keys())[i], set()) for i in
+                                 range(len(pirateships.keys()))])  # not sure if needed argument on_ship
         else:
             self.on_ship = on_ship
 
@@ -84,26 +85,29 @@ class OnePieceProblem(search.Problem):
         """
         self.treasures = initial.get("treasures")
         self.maps = initial.get("map")
-        self.marine_locations_array = initial.get("marine_ships") # addition for the functions
+        self.marine_locations_array = initial.get("marine_ships")  # addition for the functions
         marins = {key: (0, initial.get("marine_ships").get(key)) for key in
-                                                        initial.get("marine_ships").keys()}
-        pirates = initial.get("pirate_ship")
+                  initial.get("marine_ships").keys()}
+        pirates = initial.get(
+            "pirate_ships")  # TODO - VERY IMPORTANT CHECK WHAT THIS KEY IS!!!!! IT IS NOT CONSISTENT IN THEIR TESTS!!!!!!!
         self.root = search.Node(State(marins, pirates).to_hashable())
         self.columns = len(self.maps[0])
         self.rows = len(self.maps)
-        self.base = initial.get("pirate_ship")[list(pirates.keys())[0]]
+        self.base = initial.get("pirate_ships")[list(pirates.keys())[
+            0]]  # TODO - VERY IMPORTANT CHECK WHAT THIS KEY IS!!!!! IT IS NOT CONSISTENT IN THEIR TESTS!!!!!!!
         self.treasure_holders = {key: None for key in self.treasures.keys()}
 
     """ action activators """
+
     # in all of these we need to change 'new_state' based on the action provided
 
     def actions(self, state: str):
         """Returns all the actions that can be executed in the given
         state. The result should be a tuple (or other iterable) of actions
         as defined in the problem description file"""
-        new_state = State.to_hashable(state)
+        new_state = State.from_hashable(state)
         actions = []
-        
+
         #   TODO - implementing these
         actions_by_ship = []
         for ship in new_state.pirateships.keys():
@@ -112,24 +116,26 @@ class OnePieceProblem(search.Problem):
 
         return actions
 
-    def result(self, state, actions):
+    def result(self, state: str, actions):
         """Return the state that results from executing the given
         action in the given state. The action must be one of
         self.actions(state)."""
-        
+
         # TODO - implementing these
-        new_state = self.duplicate_state(state)
+        new_state = self.duplicate_state(State.from_hashable(state))
         self.move_marine(new_state)
         for action in actions:
             if action[0] == "sail":
                 new_state.pirateships[action[1]] = action[2]
                 self.pirates_marine_encounter(new_state, action[1], action[2])
             elif action[0] == "collect_treasure":
-                new_state.onship[action[1]].add(action[2])
-            elif action[0] == "deposit_treasures":
-                new_state.collected.add(treasure for treasure in new_state.onship[action[1]])
-                new_state.onship[action[1]] = set()  # now the pirateship is empty
-        return new_state
+                new_state.on_ship[action[1]].add(action[2])
+            elif action[0] == "deposit_treasure":
+                if len(new_state.on_ship[action[1]]) > 0:
+                    new_state.collected = new_state.collected.union(treasure for treasure in
+                                                                    new_state.on_ship[action[1]])
+                    new_state.on_ship[action[1]] = set()  # now the pirateship is empty
+        return new_state.to_hashable()
 
     def goal_test(self, state):
         """ Given a state, checks if all treasures have been collected """
@@ -144,19 +150,24 @@ class OnePieceProblem(search.Problem):
         state can be accessed via node.state)
         and returns a goal distance estimate"""
         new_state = State.from_hashable(node.state)
-        return 0
-
+        return self.h_test(node)
 
     def h_1(self, node: search.Node):
         new_state = State.from_hashable(node.state)
-        uncollected = self.treasures.difference(new_state.collected) # works only on sets
-        return float(len(uncollected) / len(self.pirateships))
+        uncollected = set(self.treasures.keys()).difference(new_state.collected)  # works only on sets
+        return float(len(uncollected) / len(new_state.pirateships))
 
-    def h_2(self,node):
-        distances = manhattan_distance_blocked(self.maps,self.base,'I')
+    def h_2(self, node):
+        distances = manhattan_distance_blocked(self.maps, self.base, 'I')
         treasure_dict = {key: distances[int(location[0])][int(location[1])] for key, location in self.treasures.items()}
 
-
+    def h_test(self, node):
+        new_state = State.from_hashable(node.state)
+        treasures_on_ships = set()
+        for ship in new_state.pirateships.keys():
+            treasures_on_ships.union(new_state.on_ship[ship])
+        uncollected = set(self.treasures.keys()).difference(new_state.collected)  # works only on sets
+        return float((20 * len(uncollected) - 10 * len(treasures_on_ships)) / len(new_state.pirateships))
 
     def manhattan_distance_blocked(map, start, blocked):
         rows, cols = len(map), len(map[0])
@@ -187,15 +198,18 @@ class OnePieceProblem(search.Problem):
 
         return distances
 
-
-
     """ action providers """
+
     # in all of these we can change the elements type from str if we find a better way to represent an action. maybe tuple?
     def move_marine(self, new_state: State):
         for ship in new_state.marineships:
+            if len(new_state.marineships[ship][1]) == 1:  # the marine stays still
+                return
+
             if new_state.marineships[ship][0] == len(new_state.marineships[ship][1]) - 1:
                 new_state.marineships[ship][1].reverse()
-                new_state.marineships[ship][0] = 0
+                current = new_state.marineships[ship]
+                new_state.marineships[ship] = (0, current[1])
 
             current_index_in_location_array = new_state.marineships[ship][0]
             location_array = new_state.marineships[ship][1]
@@ -220,44 +234,52 @@ class OnePieceProblem(search.Problem):
         actions = []
         row_index = state.pirateships.get(ship)[0]
         col_index = state.pirateships.get(ship)[1]
-        if self.maps[row_index][col_index] == 'B': # if current location is at base it can deposit
+        location = [row_index, col_index]
+        if self.maps[row_index][col_index] == 'B':  # if current location is at base it can deposit
             actions.append(("deposit_treasure", ship))
         ship_frame = self.possible_frame(row_index, col_index)
         for step in ship_frame:
-            if self.maps[step[0]][step[1]] == 'S' or self.maps[step] == 'B':
-                actions.append(("sail", ship, (step[0], step[1]))) # not sure if necessary to string it
-            else: # if it is "I"
+            if self.maps[step[0]][step[1]] == 'S' or self.maps[step[0]][step[1]] == 'B':
+                actions.append(("sail", ship, (step[0], step[1])))  # not sure if necessary to string it
+            else:  # if it is "I"
                 treasure = self.get_treasure_from_island(step)
                 if treasure:
-                    actions.append(("collect", ship, treasure))
+                    actions.append(("collect_treasure", ship, treasure))
         return actions
 
     def possible_frame(self, row, col):
         if row == 0:
             if col == (self.columns - 1):
-                return [[row+1,col],[row,col-1]] ##############
+                return [[row + 1, col], [row, col - 1]]  # top right corner
             if col == 0:
-                return [[row + 1, col],[row, col + 1]] ################
+                return [[row + 1, col], [row, col + 1]]  # top left corner
             else:
-                return [[row - 1, col],[row, col - 1], [row, col+1]]
+                return [[row + 1, col], [row, col - 1], [row, col + 1]]  # top row
 
 
         elif row == (self.rows - 1):
             if col == 0:
-                return [[row, col + 1],[row -1, col]]
+                arr = [[row, col + 1], [row - 1, col]]
+                return [[row, col + 1], [row - 1, col]]  # bottom left corner
 
-            if col == (self.columns -1): #down right edge
+            if col == (self.columns - 1):  # bottom right corner
                 return [[row, col - 1], [row - 1, col]]
 
             else:
-                return [[row, col - 1], [row + 1, col],[row, col + 1]] ##changed
+                return [[row, col - 1], [row - 1, col], [row, col + 1]]  # bottom row
+
+        elif col == 0:  # left col. without corners...
+            return [[row - 1, col], [row + 1, col], [row, col + 1]]
+
+        elif col == self.columns - 1:  # right col. without corners...
+            return [[row - 1, col], [row + 1, col], [row, col - 1]]
 
         else:
-            return [[row+1, col], [row-1, col], [row, col - 1], [row, col+1]]
+            return [[row + 1, col], [row - 1, col], [row, col - 1], [row, col + 1]]
 
     def get_treasure_from_island(self, step: List[int]):
         for key in self.treasures.keys():
-            if treasures[key] == tuple(step):
+            if self.treasures[key] == tuple(step):
                 return key
         return None
 
@@ -270,4 +292,3 @@ class OnePieceProblem(search.Problem):
 
 def create_onepiece_problem(game):
     return OnePieceProblem(game)
-

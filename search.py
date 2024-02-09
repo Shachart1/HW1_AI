@@ -153,23 +153,19 @@ def astar_search(problem, h=None):
 
     # Initializing the heap, the "CLOSED" set and the nodes counter
     nodes_heap = []
-    nodes_set = set()
     nodes_count = 1
 
     root = problem.root
     # it is advised in the documentation to use tuples with three elements -
     # the value to sort by, tie breaking value, the object we wish to save in the heap
-    heapq.heappush(nodes_heap, (f(root), nodes_count, root))
-    nodes_set.add(root)
+    heapq.heappush(nodes_heap, [f(root), nodes_count, root])
 
     while len(nodes_heap) > 0:
         current_node = heapq.heappop(nodes_heap)
-        possible_states_nodes = current_node.expand(problem)
+        possible_states_nodes = current_node[2].expand(problem)
         for child_node in possible_states_nodes:
-            if problem.goal_test(child_node):
+            if problem.goal_test(child_node.state):
                 return child_node.solution()
-            if child_node.state not in nodes_set:
-                nodes_set.add(state)
-                nodes_count += 1
-                heapq.heappush(nodes_heap, (f(node), nodes_count, child_node))
+            nodes_count += 1
+            heapq.heappush(nodes_heap, [f(child_node), nodes_count, child_node])
     return None

@@ -8,9 +8,9 @@ test_game = {
                 ['B', 'S', 'S', 'S'],
                 ['S', 'S', 'S', 'S']
             ],
-            "pirate_ship": {"pirate_ship_1": (2, 0)},
+            "pirate_ships": {"pirate_ship_1": (2, 0)},
             "treasures": {'treasure_1': (0, 2)},
-            "marine_ships": {'marine_1': [(1, 1), (3, 0), (2, 2), (2, 1)]}
+            "marine_ships": {'marine_1': [(3, 3)]}
         }
 
 def main():
@@ -19,8 +19,7 @@ def main():
     actions = onePiece.actions(onePiece.root.state)
     print(actions)
     print(actions[1])
-    onePiece.root.state.on_ship["pirate_ship_1"].add("treasure_1")
-    print(onePiece.result(onePiece.root.state, actions[1]))
+    print(search.astar_search(onePiece))
 
 if __name__ == '__main__':
     main()
