@@ -78,7 +78,7 @@ def main():
                 ['B', 'S', 'S', 'S'],
                 ['S', 'S', 'S', 'S']
             ],
-            "pirate_ship": {"pirate_ship_1", (2, 0)},
+            "pirate_ship": {"pirate_ship_1": (2, 0)},
             "treasures": {'treasure_1': (0, 2)},
             "marine_ships": {'marine_1': [(1, 1), (1, 2), (2, 2), (2, 1)]}
         },
