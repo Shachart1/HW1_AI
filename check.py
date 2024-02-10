@@ -61,6 +61,7 @@ def solve_problems(problems):
             return None
         timeout = 60
         result = check_problem(p, (lambda p: search.astar_search(p, p.h)), timeout)
+        print("num of nodes: ", p.initial["num_nodes"])
         print("A* ", result)
         if result[2] != None:
             if result[0] != -3:

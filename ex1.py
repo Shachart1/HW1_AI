@@ -26,24 +26,10 @@ class State:
         else:
             self.collected = collected
         if on_ship is None:
-            self.on_ship = dict([(list(pirateships.keys())[i], set()) for i in
+            self.on_ship = dict([(list(pirateships.keys())[i], []) for i in
                                  range(len(pirateships.keys()))])  # not sure if needed argument on_ship
         else:
             self.on_ship = on_ship
-
-    # TODO - is this the definitions we want to go with?
-    # def __lt__(self, other):
-    #     return self.h_value < other.h_value
-    #
-    # def __hash__(self):
-    #     return len(collected)
-    #
-    # def __eq__(self, other):
-    #     flag = set(self.marineships.keys()).intersection(set(other.marineships.keys())) == set()
-    #     flag = flag and (self.marineships[key] == other.marineships[key] for key in self.marineships.keys())
-    #     flag = flag and (self.pirateships[key] == other.pirateships[key] for key in self.pirateships.keys())
-    #     flag = flag and (self.collected.intersection(other.collected) == set())
-    #     return flag and (self.on_ship == other.on_ship)
 
     def __str__(self):
         to_print = "marine ships: " + str(self.marineships)
@@ -86,16 +72,20 @@ class OnePieceProblem(search.Problem):
         self.treasures = initial.get("treasures")
         self.maps = initial.get("map")
         self.marine_locations_array = initial.get("marine_ships")  # addition for the functions
-        marins = {key: (0, initial.get("marine_ships").get(key)) for key in
-                  initial.get("marine_ships").keys()}
-        pirates = initial.get(
-            "pirate_ships")  # TODO - VERY IMPORTANT CHECK WHAT THIS KEY IS!!!!! IT IS NOT CONSISTENT IN THEIR TESTS!!!!!!!
+        marins = {key: (0, initial.get("marine_ships").get(key)) for key in initial.get("marine_ships").keys()}
+        pirates = initial.get("pirate_ships")  # TODO - VERY IMPORTANT CHECK WHAT THIS KEY IS!!!!! IT IS NOT CONSISTENT IN THEIR TESTS!!!!!!!
         self.root = search.Node(State(marins, pirates).to_hashable())
         self.columns = len(self.maps[0])
         self.rows = len(self.maps)
-        self.base = initial.get("pirate_ships")[list(pirates.keys())[
-            0]]  # TODO - VERY IMPORTANT CHECK WHAT THIS KEY IS!!!!! IT IS NOT CONSISTENT IN THEIR TESTS!!!!!!!
-        self.treasure_holders = {key: None for key in self.treasures.keys()}
+        self.base = initial.get("pirate_ships")[list(pirates.keys())[0]]  # TODO - VERY IMPORTANT CHECK WHAT THIS KEY IS!!!!! IT IS NOT CONSISTENT IN THEIR TESTS!!!!!!!
+        self.treasure_holders = {key: set() for key in self.treasures.keys()}
+        self.distances = self.manhattan_distances(self.maps, self.base)
+        island_location_frame = [(treasure,
+                                  self.min_manhattan_around(self.distances,
+                                                            int(self.treasures[treasure][0]),
+                                                            int(self.treasures[treasure][1])))
+                                 for treasure in self.treasures.keys()]
+        self.island_location_frame_dict = {key: value for (key, value) in island_location_frame}
 
     """ action activators """
 
@@ -129,13 +119,14 @@ class OnePieceProblem(search.Problem):
                 new_state.pirateships[action[1]] = action[2]
                 self.pirates_marine_encounter(new_state, action[1], action[2])
             elif action[0] == "collect_treasure":
-                new_state.on_ship[action[1]].add(action[2])
+                new_state.on_ship[action[1]].append(action[2])
+                self.treasure_holders[action[2]] = self.treasure_holders[action[2]].union({action[1]})
             elif action[0] == "deposit_treasures":
-                ##### here i wanted to add the other dict with who owns the ship
-                for treasure in new_state.onship[action[1]]:
-                    new_state.collected.add(treasure)
-                    self.treasure_holders[treasure] = None  ######
-                new_state.onship[action[1]] = set()  # now the pirateship is empty
+                # here i wanted to add the other dict with who owns the ship
+                for treasure in new_state.on_ship[action[1]]:
+                    new_state.collected = new_state.collected.union({treasure})
+                    self.treasure_holders[treasure] = self.treasure_holders[treasure].difference({action[1]})
+                new_state.on_ship[action[1]] = []  # now the pirateship is empty
 
         return new_state.to_hashable()
 
@@ -152,7 +143,7 @@ class OnePieceProblem(search.Problem):
         state can be accessed via node.state)
         and returns a goal distance estimate"""
         new_state = State.from_hashable(node.state)
-        return self.h_test(node)
+        return self.h_1(node)
 
     def h_1(self, node: search.Node):
         new_state = State.from_hashable(node.state)
@@ -160,48 +151,39 @@ class OnePieceProblem(search.Problem):
         return float(len(uncollected) / len(new_state.pirateships))
 
     def h_2(self, node: search.Node):
-        distances = manhattan_distances(self.maps, self.base)
-        location_frame_dict = None
-        min_values_dict = None
-        sum = None
-        for treasure in self.treasures.keys():  # might change here to use the min manhattan function
-            location_frame = [(treasure, distances[element[0], element[1]]) for element in
-                              possible_frame(self, int(self.treasures[treasure][0]), int(self.treasures[treasure][
-                                                                                             1]))]  # it will save a tuple of location,distance for an adjacent cell to the treasure
-            location_frame_dict = {key: value for key, value in location_frame}
-        for treasure in treasure_dict.keys():
-            if self.treasure_holders[treasure] != None:
-                new_state = State.from_hashable(Node.state)
-                treasure_dict[treasure] = min(treasure_dict[treasure], min_manhattan_around(distances, int(
-                    self.new_state.pirateships[self.treasure_holders[treasure]][0]), int(
-                    self.new_state.pirateships[self.treasure_holders[treasure]][1]))
-                                              )  ## current_State should be saved
-                location_frame_dict[treasure].append(distances[int(
-                    new_state.pirateships[treasure_holders[treasure]][0]), int(
-                    new_state.pirateships[treasure_holders[treasure]][1])])
-                min_values_dict[treasure] = {key: min(values) for key, values in location_frame_dict.items()}
-                sum.append(float(min_values_dict[treasure] / len(new_state.pirateships.keys())))
+        sum = 0
+        location_frame_dict = self.island_location_frame_dict
+        new_state = State.from_hashable(node.state)
+        for treasure in self.treasures.keys():
+            if self.treasure_holders[treasure]:
+                treasure_on_ships = [self.min_manhattan_around(self.distances,
+                                                               int(new_state.pirateships[ship][0]),
+                                                               int(new_state.pirateships[ship][1]))
+                                     for ship in self.treasure_holders[treasure]]
+                min_treasure_on_ships = min(treasure_on_ships)
+                location_frame_dict[treasure] = min(location_frame_dict[treasure], min_treasure_on_ships)
+            sum += (float(location_frame_dict[treasure] / len(new_state.pirateships.keys())))
         return sum
 
     def min_manhattan_around(self, distances, row, col):
-        frame = possible_frame(row, col)
+        frame = self.possible_frame(row, col)
         frame_distances = []
-        if frame != None:
+        if frame:
             for element in frame:
-                frame_distances.append(distances[element[0], element[1]])
+                frame_distances.append(distances[element[0]][element[1]])
         else:
-            frame_distances = float('inf')
+            frame_distances = [float('inf')]
         return min(frame_distances)
 
     def h_test(self, node):
         new_state = State.from_hashable(node.state)
         treasures_on_ships = set()
         for ship in new_state.pirateships.keys():
-            treasures_on_ships.union(new_state.on_ship[ship])
+            treasures_on_ships.union({treasure for treasure in new_state.on_ship[ship]})
         uncollected = set(self.treasures.keys()).difference(new_state.collected)  # works only on sets
         return float((20 * len(uncollected) - 10 * len(treasures_on_ships)) / len(new_state.pirateships))
 
-    def manhattan_distances(map_array, base):
+    def manhattan_distances(self, map_array, base):
         rows = len(map_array)
         cols = len(map_array[0]) if rows > 0 else 0
 
@@ -214,34 +196,34 @@ class OnePieceProblem(search.Problem):
 
         return distances
 
-    def manhattan_distance_blocked(map, start, blocked):
-        rows, cols = len(map), len(map[0])
-        distances = [[float('inf')] * cols for _ in range(rows)]
-        visited = [[False] * cols for _ in range(rows)]
-
-        queue = [(start[0], start[1], 0)]  # (row, col, distance)
-        distances[start[0]][start[1]] = 0
-
-        while queue:
-            current_row, current_col, current_distance = queue.pop(0)
-            visited[current_row][current_col] = True
-
-            neighbors = [
-                (current_row - 1, current_col),
-                (current_row + 1, current_col),
-                (current_row, current_col - 1),
-                (current_row, current_col + 1),
-            ]
-
-            for neighbor_row, neighbor_col in neighbors:
-                if 0 <= neighbor_row < rows and 0 <= neighbor_col < cols and not visited[neighbor_row][neighbor_col] and \
-                        map[neighbor_row][neighbor_col] != blocked:
-                    new_distance = current_distance + 1
-                    if new_distance < distances[neighbor_row][neighbor_col]:
-                        distances[neighbor_row][neighbor_col] = new_distance
-                        queue.append((neighbor_row, neighbor_col, new_distance))
-
-        return distances
+    # def manhattan_distance_blocked(self, map, start, blocked):
+    #     rows, cols = len(map), len(map[0])
+    #     distances = [[float('inf')] * cols for _ in range(rows)]
+    #     visited = [[False] * cols for _ in range(rows)]
+    #
+    #     queue = [(start[0], start[1], 0)]  # (row, col, distance)
+    #     distances[start[0]][start[1]] = 0
+    #
+    #     while queue:
+    #         current_row, current_col, current_distance = queue.pop(0)
+    #         visited[current_row][current_col] = True
+    #
+    #         neighbors = [
+    #             (current_row - 1, current_col),
+    #             (current_row + 1, current_col),
+    #             (current_row, current_col - 1),
+    #             (current_row, current_col + 1),
+    #         ]
+    #
+    #         for neighbor_row, neighbor_col in neighbors:
+    #             if 0 <= neighbor_row < rows and 0 <= neighbor_col < cols and not visited[neighbor_row][neighbor_col] and \
+    #                     map[neighbor_row][neighbor_col] != blocked:
+    #                 new_distance = current_distance + 1
+    #                 if new_distance < distances[neighbor_row][neighbor_col]:
+    #                     distances[neighbor_row][neighbor_col] = new_distance
+    #                     queue.append((neighbor_row, neighbor_col, new_distance))
+    #
+    #     return distances
 
     """ action providers """
 
@@ -266,31 +248,35 @@ class OnePieceProblem(search.Problem):
     def marine_pirates_encounter(self, new_state: State, location: str):
         for pirate in new_state.pirateships.keys():
             if new_state.pirateships[pirate] == location:
-                new_state.on_ship[pirate] = set()
+                new_state.on_ship[pirate] = []
 
     def pirates_marine_encounter(self, new_state: State, pirate: str, location: str):
         for marine in new_state.marineships.keys():
             marine_locations_array = new_state.marineships[marine][1]
             marine_index = new_state.marineships[marine][0]
             if marine_locations_array[marine_index] == location:
-                new_state.on_ship[pirate] = set()
+                new_state.on_ship[pirate] = []
 
     def get_actions_for_ship(self, state, ship):
         actions = []
         row_index = state.pirateships.get(ship)[0]
         col_index = state.pirateships.get(ship)[1]
-        location = [row_index, col_index]
+        # location = [row_index, col_index]
+
         if self.maps[row_index][col_index] == 'B':  # if current location is at base it can deposit
-            actions.append(("deposit_treasure", ship))
+            actions.append(("deposit_treasures", ship))
+
         ship_frame = self.possible_frame(row_index, col_index)
         for step in ship_frame:
             if self.maps[step[0]][step[1]] == 'S' or self.maps[step[0]][step[1]] == 'B':
                 actions.append(("sail", ship, (step[0], step[1])))  # not sure if necessary to string it
+
             else:  # if it is "I"
                 treasure = self.get_treasure_from_island(step)
-                if treasure:
-                    actions.append(("collect", ship, treasure))
-                    self.treasure_holders[treasure] = ship
+                if (treasure is not None) and (len(state.on_ship[ship]) < 2):
+                    actions.append(("collect_treasure", ship, treasure))
+                    self.treasure_holders[treasure] = self.treasure_holders[treasure].union({ship})
+
         return actions
 
     def possible_frame(self, row, col):
@@ -305,7 +291,6 @@ class OnePieceProblem(search.Problem):
 
         elif row == (self.rows - 1):
             if col == 0:
-                arr = [[row, col + 1], [row - 1, col]]
                 return [[row, col + 1], [row - 1, col]]  # bottom left corner
 
             if col == (self.columns - 1):  # bottom right corner

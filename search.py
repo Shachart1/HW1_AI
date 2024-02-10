@@ -153,6 +153,7 @@ def astar_search(problem, h=None):
 
     # Initializing the heap, the "CLOSED" set and the nodes counter
     nodes_heap = []
+    states_set = set()
     nodes_count = 1
 
     root = problem.root
@@ -164,8 +165,10 @@ def astar_search(problem, h=None):
         current_node = heapq.heappop(nodes_heap)
         possible_states_nodes = current_node[2].expand(problem)
         for child_node in possible_states_nodes:
-            if problem.goal_test(child_node.state):
-                return child_node.solution()
-            nodes_count += 1
-            heapq.heappush(nodes_heap, [f(child_node), nodes_count, child_node])
+            if child_node.state not in states_set:
+                if problem.goal_test(child_node.state):
+                    return child_node.solution()
+                nodes_count += 1
+                problem.initial["num_nodes"] = nodes_count
+                heapq.heappush(nodes_heap, [f(child_node), nodes_count, child_node])
     return None
