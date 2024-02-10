@@ -158,7 +158,7 @@ class OnePieceProblem(search.Problem):
         return float(len(uncollected) / len(new_state.pirateships))
 
     def h_2(self, node: search.Node):
-        distances = manhattan_distance_blocked(self.maps, self.base, 'I')
+        distances = manhattan_distances(self.maps, self.base)
         location_frame_dict = None
         min_values_dict = None
         sum = None
@@ -184,8 +184,11 @@ class OnePieceProblem(search.Problem):
     def min_manhattan_around(self, distances, row, col):
         frame = possible_frame(row, col)
         frame_distances = []
-        for element in frame:
-            frame_distances.append(distances[element[0], element[1]])
+        if frame != None:
+            for element in frame:
+                frame_distances.append(distances[element[0], element[1]])
+        else:
+            frame_distances = float('inf')
         return min(frame_distances)
 
     def h_test(self, node):
@@ -195,6 +198,19 @@ class OnePieceProblem(search.Problem):
             treasures_on_ships.union(new_state.on_ship[ship])
         uncollected = set(self.treasures.keys()).difference(new_state.collected)  # works only on sets
         return float((20 * len(uncollected) - 10 * len(treasures_on_ships)) / len(new_state.pirateships))
+
+    def manhattan_distances(map_array, base):
+        rows = len(map_array)
+        cols = len(map_array[0]) if rows > 0 else 0
+
+        # Find the coordinates of 'B'
+        b_row = int(base[0])
+        b_col = int(base[1])
+
+        # Calculate Manhattan distances for each cell from 'B'
+        distances = [[abs(i - b_row) + abs(j - b_col) for j in range(cols)] for i in range(rows)]
+
+        return distances
 
     def manhattan_distance_blocked(map, start, blocked):
         rows, cols = len(map), len(map[0])
