@@ -130,11 +130,13 @@ class OnePieceProblem(search.Problem):
                 self.pirates_marine_encounter(new_state, action[1], action[2])
             elif action[0] == "collect_treasure":
                 new_state.on_ship[action[1]].add(action[2])
-            elif action[0] == "deposit_treasure":
-                if len(new_state.on_ship[action[1]]) > 0:
-                    new_state.collected = new_state.collected.union(treasure for treasure in
-                                                                    new_state.on_ship[action[1]])
-                    new_state.on_ship[action[1]] = set()  # now the pirateship is empty
+            elif action[0] == "deposit_treasures":
+                ##### here i wanted to add the other dict with who owns the ship
+                for treasure in new_state.onship[action[1]]:
+                    new_state.collected.add(treasure)
+                    self.treasure_holders[treasure] = None  ######
+                new_state.onship[action[1]] = set()  # now the pirateship is empty
+
         return new_state.to_hashable()
 
     def goal_test(self, state):
@@ -287,7 +289,8 @@ class OnePieceProblem(search.Problem):
             else:  # if it is "I"
                 treasure = self.get_treasure_from_island(step)
                 if treasure:
-                    actions.append(("collect_treasure", ship, treasure))
+                    actions.append(("collect", ship, treasure))
+                    self.treasure_holders[treasure] = ship
         return actions
 
     def possible_frame(self, row, col):
