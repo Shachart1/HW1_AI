@@ -155,6 +155,7 @@ def astar_search(problem, h=None):
     nodes_heap = []
     states_set = set()
     nodes_count = 1
+    problem.initial["num_nodes"] = nodes_count
 
     root = problem.root
     # it is advised in the documentation to use tuples with three elements -

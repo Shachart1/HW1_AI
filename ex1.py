@@ -96,7 +96,6 @@ class OnePieceProblem(search.Problem):
         state. The result should be a tuple (or other iterable) of actions
         as defined in the problem description file"""
         new_state = State.from_hashable(state)
-        actions = []
 
         #   TODO - implementing these
         actions_by_ship = []
@@ -115,7 +114,9 @@ class OnePieceProblem(search.Problem):
         new_state = self.duplicate_state(State.from_hashable(state))
         self.move_marine(new_state)
         for action in actions:
-            if action[0] == "sail":
+            if action[0] == "wait":
+                pass
+            elif action[0] == "sail":
                 new_state.pirateships[action[1]] = action[2]
                 self.pirates_marine_encounter(new_state, action[1], action[2])
             elif action[0] == "collect_treasure":
@@ -142,8 +143,8 @@ class OnePieceProblem(search.Problem):
         """ This is the heuristic. It gets a node (not a state,
         state can be accessed via node.state)
         and returns a goal distance estimate"""
-        new_state = State.from_hashable(node.state)
-        return self.h_1(node)
+        # new_state = State.from_hashable(node.state)
+        return self.h_2(node)
 
     def h_1(self, node: search.Node):
         new_state = State.from_hashable(node.state)
@@ -154,7 +155,10 @@ class OnePieceProblem(search.Problem):
         sum = 0
         location_frame_dict = self.island_location_frame_dict
         new_state = State.from_hashable(node.state)
-        for treasure in self.treasures.keys():
+        uncollected_treasures = set(list(self.treasures.keys())).difference(new_state.collected)
+        if new_state.collected:
+            pass
+        for treasure in uncollected_treasures:
             if self.treasure_holders[treasure]:
                 treasure_on_ships = [self.min_manhattan_around(self.distances,
                                                                int(new_state.pirateships[ship][0]),
@@ -259,6 +263,7 @@ class OnePieceProblem(search.Problem):
 
     def get_actions_for_ship(self, state, ship):
         actions = []
+        # actions.append(("wait", ship))
         row_index = state.pirateships.get(ship)[0]
         col_index = state.pirateships.get(ship)[1]
         # location = [row_index, col_index]
@@ -273,7 +278,7 @@ class OnePieceProblem(search.Problem):
 
             else:  # if it is "I"
                 treasure = self.get_treasure_from_island(step)
-                if (treasure is not None) and (len(state.on_ship[ship]) < 2):
+                if (treasure is not None) and treasure not in state.on_ship[ship] and (len(state.on_ship[ship]) < 2):
                     actions.append(("collect_treasure", ship, treasure))
                     self.treasure_holders[treasure] = self.treasure_holders[treasure].union({ship})
 
