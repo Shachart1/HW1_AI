@@ -157,9 +157,36 @@ class OnePieceProblem(search.Problem):
         uncollected = set(self.treasures.keys()).difference(new_state.collected)  # works only on sets
         return float(len(uncollected) / len(new_state.pirateships))
 
-    def h_2(self, node):
+    def h_2(self, node: search.Node):
         distances = manhattan_distance_blocked(self.maps, self.base, 'I')
-        treasure_dict = {key: distances[int(location[0])][int(location[1])] for key, location in self.treasures.items()}
+        location_frame_dict = None
+        min_values_dict = None
+        sum = None
+        for treasure in self.treasures.keys():  # might change here to use the min manhattan function
+            location_frame = [(treasure, distances[element[0], element[1]]) for element in
+                              possible_frame(self, int(self.treasures[treasure][0]), int(self.treasures[treasure][
+                                                                                             1]))]  # it will save a tuple of location,distance for an adjacent cell to the treasure
+            location_frame_dict = {key: value for key, value in location_frame}
+        for treasure in treasure_dict.keys():
+            if self.treasure_holders[treasure] != None:
+                new_state = State.from_hashable(Node.state)
+                treasure_dict[treasure] = min(treasure_dict[treasure], min_manhattan_around(distances, int(
+                    self.new_state.pirateships[self.treasure_holders[treasure]][0]), int(
+                    self.new_state.pirateships[self.treasure_holders[treasure]][1]))
+                                              )  ## current_State should be saved
+                location_frame_dict[treasure].append(distances[int(
+                    new_state.pirateships[treasure_holders[treasure]][0]), int(
+                    new_state.pirateships[treasure_holders[treasure]][1])])
+                min_values_dict[treasure] = {key: min(values) for key, values in location_frame_dict.items()}
+                sum.append(float(min_values_dict[treasure] / len(new_state.pirateships.keys())))
+        return sum
+
+    def min_manhattan_around(self, distances, row, col):
+        frame = possible_frame(row, col)
+        frame_distances = []
+        for element in frame:
+            frame_distances.append(distances[element[0], element[1]])
+        return min(frame_distances)
 
     def h_test(self, node):
         new_state = State.from_hashable(node.state)
