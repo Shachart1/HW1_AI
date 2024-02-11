@@ -167,9 +167,11 @@ def astar_search(problem, h=None):
         possible_states_nodes = current_node[2].expand(problem)
         for child_node in possible_states_nodes:
             if child_node.state not in states_set:
+                states_set = states_set.union({child_node.state})
                 if problem.goal_test(child_node.state):
                     return child_node.solution()
                 nodes_count += 1
                 problem.initial["num_nodes"] = nodes_count
                 heapq.heappush(nodes_heap, [f(child_node), nodes_count, child_node])
+    print("NO SOLUTION")
     return None

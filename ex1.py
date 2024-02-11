@@ -15,14 +15,14 @@ class State:
     """
 
     def __init__(self, marineships: dict, pirateships: dict,
-                 collected: set = None, on_ship: dict = None):  # not sure if marine ships is necessary
-        self.marineships = marineships
+                 collected: list = None, on_ship: dict = None):  # not sure if marine ships is necessary
+        self.marineships = dict(sorted(marineships.items()))
         # current index of marineships in its movement array.
 
         # self.marineships_current = dict([(list(marineships.keys())[i], 0) for i in range(len(marineships.keys()))])
         self.pirateships = pirateships
         if collected is None:
-            self.collected = set()
+            self.collected = list()
         else:
             self.collected = collected
         if on_ship is None:
@@ -50,7 +50,7 @@ class State:
     @classmethod
     def from_hashable(cls, hashable_string: str):
         state_dictionary = eval(hashable_string)
-        marineships = eval(state_dictionary["marineships"])
+        marineships = dict(sorted(eval(state_dictionary["marineships"]).items()))
         pirateships = eval(state_dictionary["pirateships"])
         collected = eval(state_dictionary["collected"])
         on_ship = eval(state_dictionary["on_ship"])
@@ -114,18 +114,22 @@ class OnePieceProblem(search.Problem):
         new_state = self.duplicate_state(State.from_hashable(state))
         self.move_marine(new_state)
         for action in actions:
-            if action[0] == "wait":
-                pass
-            elif action[0] == "sail":
+            if action[0] == "sail":
                 new_state.pirateships[action[1]] = action[2]
+                new_state.pirateships = dict(sorted(new_state.pirateships.items()))
                 self.pirates_marine_encounter(new_state, action[1], action[2])
             elif action[0] == "collect_treasure":
                 new_state.on_ship[action[1]].append(action[2])
+                new_state.on_ship = dict(sorted(new_state.on_ship.items()))  # first sort by key values so ship_1 will be before ship_2 for example
+                for ship in new_state.on_ship:
+                    new_state.on_ship[ship] = sorted(new_state.on_ship[ship])  # sort each list of treasures inside
                 self.treasure_holders[action[2]] = self.treasure_holders[action[2]].union({action[1]})
             elif action[0] == "deposit_treasures":
                 # here i wanted to add the other dict with who owns the ship
                 for treasure in new_state.on_ship[action[1]]:
-                    new_state.collected = new_state.collected.union({treasure})
+                    if treasure not in new_state.collected:
+                        new_state.collected.append(treasure)
+                        new_state.collected = sorted(new_state.collected)
                     self.treasure_holders[treasure] = self.treasure_holders[treasure].difference({action[1]})
                 new_state.on_ship[action[1]] = []  # now the pirateship is empty
 
@@ -148,16 +152,14 @@ class OnePieceProblem(search.Problem):
 
     def h_1(self, node: search.Node):
         new_state = State.from_hashable(node.state)
-        uncollected = set(self.treasures.keys()).difference(new_state.collected)  # works only on sets
+        uncollected = set(self.treasures.keys()).difference(set(new_state.collected))  # works only on sets
         return float(len(uncollected) / len(new_state.pirateships))
 
     def h_2(self, node: search.Node):
         sum = 0
         location_frame_dict = self.island_location_frame_dict
         new_state = State.from_hashable(node.state)
-        uncollected_treasures = set(list(self.treasures.keys())).difference(new_state.collected)
-        if new_state.collected:
-            pass
+        uncollected_treasures = set(list(self.treasures.keys())).difference(set(new_state.collected))
         for treasure in uncollected_treasures:
             if self.treasure_holders[treasure]:
                 treasure_on_ships = [self.min_manhattan_around(self.distances,
@@ -184,7 +186,7 @@ class OnePieceProblem(search.Problem):
         treasures_on_ships = set()
         for ship in new_state.pirateships.keys():
             treasures_on_ships.union({treasure for treasure in new_state.on_ship[ship]})
-        uncollected = set(self.treasures.keys()).difference(new_state.collected)  # works only on sets
+        uncollected = set(self.treasures.keys()).difference(set(new_state.collected))  # works only on sets
         return float((20 * len(uncollected) - 10 * len(treasures_on_ships)) / len(new_state.pirateships))
 
     def manhattan_distances(self, map_array, base):
@@ -263,10 +265,10 @@ class OnePieceProblem(search.Problem):
 
     def get_actions_for_ship(self, state, ship):
         actions = []
-        # actions.append(("wait", ship))
+        actions.append(("wait", ship))
         row_index = state.pirateships.get(ship)[0]
         col_index = state.pirateships.get(ship)[1]
-        # location = [row_index, col_index]
+        location = [row_index, col_index]
 
         if self.maps[row_index][col_index] == 'B':  # if current location is at base it can deposit
             actions.append(("deposit_treasures", ship))
@@ -277,12 +279,13 @@ class OnePieceProblem(search.Problem):
                 actions.append(("sail", ship, (step[0], step[1])))  # not sure if necessary to string it
 
             else:  # if it is "I"
-                treasure = self.get_treasure_from_island(step)
+                treasure = self.get_treasure_from_island(state, ship, step)
                 if (treasure is not None) and treasure not in state.on_ship[ship] and (len(state.on_ship[ship]) < 2):
                     actions.append(("collect_treasure", ship, treasure))
                     self.treasure_holders[treasure] = self.treasure_holders[treasure].union({ship})
 
         return actions
+
 
     def possible_frame(self, row, col):
         if row == 0:
@@ -313,9 +316,9 @@ class OnePieceProblem(search.Problem):
         else:
             return [[row + 1, col], [row - 1, col], [row, col - 1], [row, col + 1]]
 
-    def get_treasure_from_island(self, step: List[int]):
+    def get_treasure_from_island(self, state, ship, step: List[int]):
         for key in self.treasures.keys():
-            if self.treasures[key] == tuple(step):
+            if self.treasures[key] == tuple(step) and key not in state.collected and key not in state.on_ship[ship]:
                 return key
         return None
 
