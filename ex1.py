@@ -118,14 +118,19 @@ class OnePieceProblem(search.Problem):
                 pass
             elif action[0] == "sail":
                 new_state.pirateships[action[1]] = action[2]
+                new_state.pirateships = dict(sorted(new_state.pirateships.items()))
                 self.pirates_marine_encounter(new_state, action[1], action[2])
             elif action[0] == "collect_treasure":
                 new_state.on_ship[action[1]].append(action[2])
+                new_state.on_ship = dict(sorted(new_state.on_ship.items())) #first sort by key values so ship_1 will be before ship_2 for example
+                for ship in new_state.on_ship:
+                    new_state.on_ship[ship] = sorted(new_state.on_ship[ship]) #sort each list of treasures inside
                 self.treasure_holders[action[2]] = self.treasure_holders[action[2]].union({action[1]})
             elif action[0] == "deposit_treasures":
                 # here i wanted to add the other dict with who owns the ship
                 for treasure in new_state.on_ship[action[1]]:
                     new_state.collected = new_state.collected.union({treasure})
+                    new_state.collected = set(sorted(new_state.collected))
                     self.treasure_holders[treasure] = self.treasure_holders[treasure].difference({action[1]})
                 new_state.on_ship[action[1]] = []  # now the pirateship is empty
 
