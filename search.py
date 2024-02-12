@@ -169,7 +169,7 @@ def astar_search(problem, h=None):
             if child_node.state not in states_set:
                 states_set = states_set.union({child_node.state})
                 if problem.goal_test(child_node.state):
-                    return child_node.solution()
+                    return child_node
                 nodes_count += 1
                 problem.initial["num_nodes"] = nodes_count
                 heapq.heappush(nodes_heap, [f(child_node), nodes_count, child_node])

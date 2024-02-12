@@ -67,7 +67,6 @@ def solve_problems(problems):
             if result[0] != -3:
                 solved = solved + 1
 
-
 def main():
     print(ex1.ids)
     """Here goes the input you want to check"""
@@ -144,6 +143,7 @@ def main():
         ],
         "pirate_ships": {"pirate_ship_1": (2, 0), "pirate_ship_2": (2, 0)},
         "treasures": {'treasure_1': (0, 2), 'treasure_2': (3, 5)},
+        # "marine_ships": {'marine_1': [(2, 1)]},
         "marine_ships": {'marine_1': [(1, 1), (1, 2), (2, 2), (2, 1)], 'marine_2': [(2, 1)]}
     },
     {
