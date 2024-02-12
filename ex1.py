@@ -3,7 +3,7 @@ import random
 from typing import List
 from itertools import product
 
-ids = ["208114744", "206394280"]
+ids = ["", ""]
 
 
 class State:
