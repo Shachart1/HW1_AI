@@ -151,15 +151,13 @@ class OnePieceProblem(search.Problem):
         """ This is the heuristic. It gets a node (not a state,
         state can be accessed via node.state)
         and returns a goal distance estimate"""
-        new_state = State.from_hashable(node.state)
-        treasures_on_ships = set()
-
-        for ship in new_state.on_ship.keys():
-            treasures_on_ships = treasures_on_ships.union(new_state.on_ship[ship])
-        treasures_on_islands_count = len(self.treasures.keys()) - len(treasures_on_ships.union(new_state.collected))
-        return max(self.h_1(node),
-                   self.h_2(node)/(len(treasures_on_ships) + 1),
-                   self.h_bfs(node) / (treasures_on_islands_count + 1))
+        # new_state = State.from_hashable(node.state)
+        # treasures_on_ships = set()
+        #
+        # for ship in new_state.on_ship.keys():
+        #     treasures_on_ships = treasures_on_ships.union(new_state.on_ship[ship])
+        # treasures_on_islands_count = len(self.treasures.keys()) - len(treasures_on_ships.union(new_state.collected))
+        return self.h_2(node)
 
     def h_1(self, node: search.Node):
         new_state = State.from_hashable(node.state)
@@ -348,7 +346,6 @@ class OnePieceProblem(search.Problem):
 
     def get_actions_for_ship(self, state, ship):
         actions = []
-        actions.append(("wait", ship))
         row_index = state.pirateships.get(ship)[0]
         col_index = state.pirateships.get(ship)[1]
         location = [row_index, col_index]
@@ -357,6 +354,11 @@ class OnePieceProblem(search.Problem):
             actions.append(("deposit_treasures", ship))
 
         ship_frame = self.possible_frame(row_index, col_index)
+        is_marine_encounter_possible = False
+        for marine in state.marineships.keys():
+            marine_location = state.marineships[marine][1][state.marineships[marine][0]]
+            if marine_location in ship_frame:
+                is_marine_encounter_possible = True
         for step in ship_frame:
             if self.maps[step[0]][step[1]] == 'S' or self.maps[step[0]][step[1]] == 'B':
                 actions.append(("sail", ship, (step[0], step[1])))  # not sure if necessary to string it
@@ -367,6 +369,8 @@ class OnePieceProblem(search.Problem):
                     actions.append(("collect_treasure", ship, treasure))
                     self.treasure_holders[treasure] = self.treasure_holders[treasure].union({ship})
 
+        if is_marine_encounter_possible:
+            actions.append(("wait", ship))
         return actions
 
     def possible_frame(self, row, col):
