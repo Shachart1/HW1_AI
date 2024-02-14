@@ -95,6 +95,8 @@ class Node:
         self.depth = 0
         if parent:
             self.depth = parent.depth + 1
+        if self.depth == 12:
+            flag = False
 
     def __repr__(self):
         return "<Node {}>".format(self.state)
@@ -116,6 +118,7 @@ class Node:
 
     def solution(self):
         """Return the sequence of actions to go from the root to this node."""
+        full_sol = [node for node in self.path()[1:]]
         return [node.action for node in self.path()[1:]]
 
     def path(self):

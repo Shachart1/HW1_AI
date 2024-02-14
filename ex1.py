@@ -121,9 +121,9 @@ class OnePieceProblem(search.Problem):
         self.move_marine(new_state)
         for action in actions:
             if action[0] == "sail":
-                new_state.pirateships[action[1]] = action[2]
+                current = new_state.pirateships[action[1]]
                 new_state.pirateships = dict(sorted(new_state.pirateships.items()))
-                self.pirates_marine_encounter(new_state, action[1], action[2])
+                new_state.pirateships[action[1]] = action[2]
             elif action[0] == "collect_treasure":
                 #new_state.on_ship[action[1]].append(action[2])
                 #new_state.on_ship = dict(sorted(
@@ -141,6 +141,7 @@ class OnePieceProblem(search.Problem):
                         #new_state.collected = sorted(new_state.collected)
                     self.treasure_holders[treasure] = self.treasure_holders[treasure].difference({action[1]})
                 new_state.on_ship[action[1]] = []  # now the pirateship is empty
+        self.pirates_marine_encounter(new_state, action[1], new_state.pirateships[action[1]])
 
         return new_state.to_hashable()
 
@@ -156,15 +157,13 @@ class OnePieceProblem(search.Problem):
         """ This is the heuristic. It gets a node (not a state,
         state can be accessed via node.state)
         and returns a goal distance estimate"""
-        new_state = State.from_hashable(node.state)
-        treasures_on_ships = set()
-
-        for ship in new_state.on_ship.keys():
-            treasures_on_ships = treasures_on_ships.union(new_state.on_ship[ship])
-        treasures_on_islands_count = len(self.treasures.keys()) - len(treasures_on_ships.union(new_state.collected))
-        return max(self.h_1(node),
-                   self.h_2(node)/(len(treasures_on_ships) + 1),
-                   self.h_bfs(node) / (treasures_on_islands_count + 1))
+        # new_state = State.from_hashable(node.state)
+        # treasures_on_ships = set()
+        #
+        # for ship in new_state.on_ship.keys():
+        #     treasures_on_ships = treasures_on_ships.union(new_state.on_ship[ship])
+        # treasures_on_islands_count = len(self.treasures.keys()) - len(treasures_on_ships.union(new_state.collected))
+        return max(self.h_1(node), self.h_2(node))
 
     def h_1(self, node: search.Node):
         new_state = State.from_hashable(node.state)
@@ -193,27 +192,43 @@ class OnePieceProblem(search.Problem):
         location_frame_dict = self.island_location_frame_dict
         new_state = State.from_hashable(node.state)
         uncollected_treasures = set(list(self.treasures.keys())).difference(set(new_state.collected))
+        on_ship_treasures_test = list(new_state.on_ship.values())
+        combined_list_of_treasures = list()
+        for treasure_list in on_ship_treasures_test:
+            combined_list_of_treasures.extend(treasure_list)
+        on_ship_treasures_set_test = set()
+        if combined_list_of_treasures:
+            on_ship_treasures_set_test.union(set(combined_list_of_treasures))
         not_on_ships = set(list(self.treasures.keys()))\
-            .difference(set(new_state.collected).union(set(new_state.on_ship.values())))
+            .difference(set(new_state.collected).union(on_ship_treasures_set_test))
 
-        # Compute h2
-        for treasure in uncollected_treasures:
-            treasure_on_ships = [self.min_manhattan_around(self.distances,
-                                                           int(new_state.pirateships[ship][0]),
-                                                           int(new_state.pirateships[ship][1]))
-                                  for ship in self.treasure_holders[treasure]]
-            min_treasure_on_ships = min(treasure_on_ships)
-            location_frame_dict[treasure] = min(location_frame_dict[treasure], min_treasure_on_ships)
-            sum += float(location_frame_dict[treasure])
+        # Compute min distances for treasures on ships
+        for ship in new_state.on_ship.keys():
+            ship_helps_flag = False
+            for treasure in new_state.on_ship[ship]:
+                if location_frame_dict[treasure] < self.distances[int(new_state.pirateships[ship][0])][int(new_state.pirateships[ship][1])]:
+                    sum += location_frame_dict[treasure]
+                else:
+                    ship_helps_flag = True
+            if ship_helps_flag:
+                sum += self.distances[int(new_state.pirateships[ship][0])][int(new_state.pirateships[ship][1])]
+        #     treasure_on_ships = [self.min_manhattan_around(self.distances,
+        #                                                    int(new_state.pirateships[ship][0]),
+        #                                                    int(new_state.pirateships[ship][1]))
+        #                           for ship in self.treasure_holders[treasure]]
+        #     min_treasure_on_ships = min(treasure_on_ships)
+        #     location_frame_dict[treasure] = min(location_frame_dict[treasure], min_treasure_on_ships)
+        # sum += float(location_frame_dict[treasure])
 
         # add distance from the closest ship to the uncollected treasure
         treasure_island_location = set()
         for treasure in not_on_ships:
-            treasure_island_location = treasure_island_location.union(set(tuple(self.treasures[treasure])))
+            treasure_island_location.add(self.treasures[treasure])
         for treasure_location in treasure_island_location:
             min_distance = float("inf")
             for ship in new_state.pirateships.keys():
-                for step in self.possible_frame(treasure_location[0], treasure_location[1]):
+                treasure_frame = self.possible_frame(treasure_location[0], treasure_location[1])
+                for step in treasure_frame:
                     distance = self.manhattan_distance_a2b(new_state.pirateships[ship], step)
                     min_distance = min(min_distance, distance)
             sum += min_distance + self.distances[treasure_location[0]][treasure_location[1]]
@@ -438,14 +453,14 @@ class OnePieceProblem(search.Problem):
 
     def marine_pirates_encounter(self, new_state: State, location: str):
         for pirate in new_state.pirateships.keys():
-            if new_state.pirateships[pirate] == location:
+            if tuple(new_state.pirateships[pirate]) == tuple(location):
                 new_state.on_ship[pirate] = []
 
     def pirates_marine_encounter(self, new_state: State, pirate: str, location: str):
         for marine in new_state.marineships.keys():
             marine_locations_array = new_state.marineships[marine][1]
             marine_index = new_state.marineships[marine][0]
-            if marine_locations_array[marine_index] == location:
+            if tuple(marine_locations_array[marine_index]) == tuple(location):
                 new_state.on_ship[pirate] = []
 
     def get_actions_for_ship(self, state, ship):
@@ -509,7 +524,7 @@ class OnePieceProblem(search.Problem):
 
     def get_treasure_from_island(self, state, ship, step: List[int]):
         for key in self.treasures.keys():
-            if self.treasures[key] == tuple(step) and key not in state.collected and key not in state.on_ship[ship]:
+            if tuple(self.treasures[key]) == tuple(step) and key not in state.collected and key not in state.on_ship[ship]:
                 return key
         return None
 

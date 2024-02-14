@@ -43,6 +43,7 @@ def check_problem(p, search_method, timeout):
 
     if isinstance(s, search.Node):
         solve = s
+        solve.solution()
         solution = list(map(lambda n: n.action, solve.path()))[1:]
         return (len(solution), t2 - t1, solution)
     elif s is None:
@@ -59,7 +60,7 @@ def solve_problems(problems):
         except Exception as e:
             print("Error creating problem: ", e)
             return None
-        timeout = 6000
+        timeout = 60
         result = check_problem(p, (lambda p: search.astar_search(p, p.h)), timeout)
         print("num of nodes: ", p.initial["num_nodes"])
         print("A* ", result)
@@ -71,52 +72,52 @@ def main():
     print(ex1.ids)
     """Here goes the input you want to check"""
     problems = [
-        # {
-        #     "map": [
-        #         ['S', 'S', 'I', 'S'],
-        #         ['S', 'S', 'S', 'S'],
-        #         ['B', 'S', 'S', 'S'],
-        #         ['S', 'S', 'S', 'S']
-        #     ],
-        #     "pirate_ships": {"pirate_ship_1": (2, 0)},
-        #     "treasures": {'treasure_1': (0, 2)},
-        #     "marine_ships": {'marine_1': [(1, 1), (1, 2), (2, 2), (2, 1)]}
-        # },
-        #
-        # {
-        #     "map": [
-        #         ['S', 'S', 'I', 'S', 'S'],
-        #         ['S', 'S', 'S', 'S', 'S'],
-        #         ['B', 'S', 'S', 'S', 'S'],
-        #         ['S', 'S', 'S', 'I', 'S'],
-        #         ['S', 'S', 'S', 'S', 'S']
-        #     ],
-        #     "pirate_ships": {"pirate_ship_1": (2, 0)},
-        #     "treasures": {'treasure_1': (0, 2), 'treasure_2': (3, 3)},
-        #     "marine_ships": {
-        #         'marine_1': [(1, 1), (1, 2), (2, 2), (2, 1), (3, 1)],
-        #         'marine_2': [(3, 4), (2, 4), (1, 4), (1, 3), (2, 3)]
-        #     }
-        # },
-        # {
-        #     'map': [['S', 'S', 'S', 'S', 'I'],
-        #             ['S', 'I', 'S', 'S', 'S'],
-        #             ['S', 'S', 'S', 'S', 'S'],
-        #             ['B', 'S', 'S', 'I', 'S']],
-        #     'pirate_ships': {'pirate_ship_1': (3, 0)},
-        #     'treasures': {'treasure_1': (3, 3), 'treasure_2': (1, 1), 'treasure_3': (0, 4)},
-        #     'marine_ships': {'marine_1': [(3, 2)], 'marine_2': [(0, 2), (0, 3)], 'marine_3': [(3, 4), (2, 4)]},
-        # },
-        # {
-        #     'map': [['S', 'S', 'S', 'S', 'I'],
-        #             ['S', 'I', 'S', 'S', 'S'],
-        #             ['S', 'S', 'S', 'S', 'S'],
-        #             ['B', 'S', 'S', 'I', 'S']],
-        #     'pirate_ships': {'pirate_ship_1': (3, 0)},
-        #     'treasures': {'treasure_1': (1, 1), 'treasure_2': (3, 3)},
-        #     'marine_ships': {'marine_1': [(2, 3), (2, 4)], 'marine_2': [(0, 1), (0, 0)], 'marine_3': [(0, 0), (0, 1)],
-        #                      'marine_4': [(2, 4), (2, 3)]},
-        # },
+        {
+            "map": [
+                ['S', 'S', 'I', 'S'],
+                ['S', 'S', 'S', 'S'],
+                ['B', 'S', 'S', 'S'],
+                ['S', 'S', 'S', 'S']
+            ],
+            "pirate_ships": {"pirate_ship_1": (2, 0)},
+            "treasures": {'treasure_1': (0, 2)},
+            "marine_ships": {'marine_1': [(1, 1), (1, 2), (2, 2), (2, 1)]}
+        },
+
+        {
+            "map": [
+                ['S', 'S', 'I', 'S', 'S'],
+                ['S', 'S', 'S', 'S', 'S'],
+                ['B', 'S', 'S', 'S', 'S'],
+                ['S', 'S', 'S', 'I', 'S'],
+                ['S', 'S', 'S', 'S', 'S']
+            ],
+            "pirate_ships": {"pirate_ship_1": (2, 0)},
+            "treasures": {'treasure_1': (0, 2), 'treasure_2': (3, 3)},
+            "marine_ships": {
+                'marine_1': [(1, 1), (1, 2), (2, 2), (2, 1), (3, 1)],
+                'marine_2': [(3, 4), (2, 4), (1, 4), (1, 3), (2, 3)]
+            }
+        },
+        {
+            'map': [['S', 'S', 'S', 'S', 'I'],
+                    ['S', 'I', 'S', 'S', 'S'],
+                    ['S', 'S', 'S', 'S', 'S'],
+                    ['B', 'S', 'S', 'I', 'S']],
+            'pirate_ships': {'pirate_ship_1': (3, 0)},
+            'treasures': {'treasure_1': (3, 3), 'treasure_2': (1, 1), 'treasure_3': (0, 4)},
+            'marine_ships': {'marine_1': [(3, 2)], 'marine_2': [(0, 2), (0, 3)], 'marine_3': [(3, 4), (2, 4)]},
+        },
+        {
+            'map': [['S', 'S', 'S', 'S', 'I'],
+                    ['S', 'I', 'S', 'S', 'S'],
+                    ['S', 'S', 'S', 'S', 'S'],
+                    ['B', 'S', 'S', 'I', 'S']],
+            'pirate_ships': {'pirate_ship_1': (3, 0)},
+            'treasures': {'treasure_1': (1, 1), 'treasure_2': (3, 3)},
+            'marine_ships': {'marine_1': [(2, 3), (2, 4)], 'marine_2': [(0, 1), (0, 0)], 'marine_3': [(0, 0), (0, 1)],
+                             'marine_4': [(2, 4), (2, 3)]},
+        },
         {
             'map': [['S', 'S', 'S', 'I', 'S', 'S', 'S'],
                     ['S', 'I', 'S', 'S', 'S', 'S', 'I'],
@@ -129,8 +130,6 @@ def main():
             'marine_ships': {'marine_1': [(4, 1), (4, 2)], 'marine_2': [(3, 5), (3, 4), (4, 4)],
                              'marine_3': [(1, 2), (1, 3), (1, 4)], 'marine_4': [(5, 6)]},
         },
-
-
     ]
 
     new_inputs = [
@@ -143,7 +142,6 @@ def main():
         ],
         "pirate_ships": {"pirate_ship_1": (2, 0), "pirate_ship_2": (2, 0)},
         "treasures": {'treasure_1': (0, 2), 'treasure_2': (3, 5)},
-        # "marine_ships": {'marine_1': [(2, 1)]},
         "marine_ships": {'marine_1': [(1, 1), (1, 2), (2, 2), (2, 1)], 'marine_2': [(2, 1)]}
     },
     {
@@ -192,7 +190,7 @@ def main():
     ]
     solve_problems(problems)
     print("-------------- new inputs ----------------")
-    # solve_problems(new_inputs)
+    solve_problems(new_inputs)
 
 
 if __name__ == '__main__':
