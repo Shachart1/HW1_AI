@@ -86,6 +86,7 @@ class OnePieceProblem(search.Problem):
             0]]  # TODO - VERY IMPORTANT CHECK WHAT THIS KEY IS!!!!! IT IS NOT CONSISTENT IN THEIR TESTS!!!!!!!
         self.treasure_holders = {key: set() for key in self.treasures.keys()}
         self.distances = self.manhattan_distances(self.maps, self.base)
+        self.distances_blocked = self.manhattan_distance_blocked(self.maps, self.base, 'I')
         island_location_frame = [(treasure,
                                   self.min_manhattan_around(self.distances,
                                                             int(self.treasures[treasure][0]),
@@ -157,7 +158,7 @@ class OnePieceProblem(search.Problem):
         state can be accessed via node.state)
         and returns a goal distance estimate"""
         # new_state = State.from_hashable(node.state)
-        return self.h_2(node)
+        return self.h_2_blocked(node)
 
     def h_1(self, node: search.Node):
         new_state = State.from_hashable(node.state)
@@ -179,6 +180,44 @@ class OnePieceProblem(search.Problem):
                 location_frame_dict[treasure] = min(location_frame_dict[treasure], min_treasure_on_ships)
             sum += float(location_frame_dict[treasure])
         return sum / len(new_state.pirateships.keys())
+    def h_2_blocked(self, node: search.Node):
+        sum = 0
+        location_frame_dict = self.island_location_frame_dict
+        new_state = State.from_hashable(node.state)
+        uncollected_treasures = set(list(self.treasures.keys())).difference(set(new_state.collected))
+        for treasure in uncollected_treasures:
+            if self.treasure_holders[treasure]:
+                treasure_on_ships = [self.min_manhattan_around(self.distances_blocked,
+                                                               int(new_state.pirateships[ship][0]),
+                                                               int(new_state.pirateships[ship][1]))
+                                     for ship in self.treasure_holders[treasure]]
+                min_treasure_on_ships = min(treasure_on_ships)
+                location_frame_dict[treasure] = min(location_frame_dict[treasure], min_treasure_on_ships)
+            sum += float(location_frame_dict[treasure])
+        return sum / len(new_state.pirateships.keys())
+    def h_3(self, node: search.Node):
+        sum_of_distances = 0
+        new_state = State.from_hashable(node.state)
+
+        # Collect only the treasures that have not been collected yet
+        uncollected_treasures = {treasure: location for treasure, location in self.treasures.items() if
+                                 treasure not in new_state.collected}
+
+        # Now use this dict to find the closest treasures
+        closest_treasures = self.find_closest_treasures(self.maps, uncollected_treasures)
+
+        for pirateship in new_state.pirateships.keys():
+            # You should handle the cases properly based on the context
+            if new_state.on_ship[pirateship]:
+                if len(new_state.on_ship[pirateship]) < 2:
+
+                    sum_of_distances += min(self.distances[int(new_state.pirateships[pirateship][0])][int(new_state.pirateships[pirateship][1])], int(closest_treasures[pirateship][1]))
+            else:
+
+                sum_of_distances += len(self.maps[0]) 
+
+        return sum_of_distances / len(new_state.pirateships.keys())
+
 
     def min_manhattan_around(self, distances, row, col):
         frame = self.possible_frame(row, col)
@@ -192,6 +231,24 @@ class OnePieceProblem(search.Problem):
         #     frame_distances = [float('inf')]
         return min_distance
 
+    def find_closest_treasures(map, treasures):
+        def manhattan_distance(t1, t2):
+            return abs(t1[0] - t2[0]) + abs(t1[1] - t2[1])
+
+        closest_treasures = {}
+
+        for treasure, location in treasures.items():
+            min_distance = float('inf')
+            closest_treasure = None
+            for other_treasure, other_location in treasures.items():
+                if treasure != other_treasure:  # Ensure we're not comparing the same treasure
+                    distance = manhattan_distance(location, other_location)
+                    if distance < min_distance:
+                        min_distance = distance
+                        closest_treasure = other_treasure
+            closest_treasures[treasure] = (closest_treasure, min_distance)
+
+        return closest_treasures
     def h_test(self, node):
         new_state = State.from_hashable(node.state)
         treasures_on_ships = set()
@@ -217,34 +274,34 @@ class OnePieceProblem(search.Problem):
 
         return distances
 
-    # def manhattan_distance_blocked(self, map, start, blocked):
-    #     rows, cols = len(map), len(map[0])
-    #     distances = [[float('inf')] * cols for _ in range(rows)]
-    #     visited = [[False] * cols for _ in range(rows)]
-    #
-    #     queue = [(start[0], start[1], 0)]  # (row, col, distance)
-    #     distances[start[0]][start[1]] = 0
-    #
-    #     while queue:
-    #         current_row, current_col, current_distance = queue.pop(0)
-    #         visited[current_row][current_col] = True
-    #
-    #         neighbors = [
-    #             (current_row - 1, current_col),
-    #             (current_row + 1, current_col),
-    #             (current_row, current_col - 1),
-    #             (current_row, current_col + 1),
-    #         ]
-    #
-    #         for neighbor_row, neighbor_col in neighbors:
-    #             if 0 <= neighbor_row < rows and 0 <= neighbor_col < cols and not visited[neighbor_row][neighbor_col] and \
-    #                     map[neighbor_row][neighbor_col] != blocked:
-    #                 new_distance = current_distance + 1
-    #                 if new_distance < distances[neighbor_row][neighbor_col]:
-    #                     distances[neighbor_row][neighbor_col] = new_distance
-    #                     queue.append((neighbor_row, neighbor_col, new_distance))
-    #
-    #     return distances
+    def manhattan_distance_blocked(self, map, start, blocked):
+        rows, cols = len(map), len(map[0])
+        distances = [[float('inf')] * cols for _ in range(rows)]
+        visited = [[False] * cols for _ in range(rows)]
+
+        queue = [(start[0], start[1], 0)]  # (row, col, distance)
+        distances[start[0]][start[1]] = 0
+
+        while queue:
+            current_row, current_col, current_distance = queue.pop(0)
+            visited[current_row][current_col] = True
+
+            neighbors = [
+                (current_row - 1, current_col),
+                (current_row + 1, current_col),
+                (current_row, current_col - 1),
+                (current_row, current_col + 1),
+            ]
+
+            for neighbor_row, neighbor_col in neighbors:
+                if 0 <= neighbor_row < rows and 0 <= neighbor_col < cols and not visited[neighbor_row][neighbor_col] and \
+                        map[neighbor_row][neighbor_col] != blocked:
+                    new_distance = current_distance + 1
+                    if new_distance < distances[neighbor_row][neighbor_col]:
+                        distances[neighbor_row][neighbor_col] = new_distance
+                        queue.append((neighbor_row, neighbor_col, new_distance))
+
+        return distances
 
     """ action providers """
 
