@@ -86,7 +86,6 @@ class OnePieceProblem(search.Problem):
             0]]  # TODO - VERY IMPORTANT CHECK WHAT THIS KEY IS!!!!! IT IS NOT CONSISTENT IN THEIR TESTS!!!!!!!
         self.treasure_holders = {key: set() for key in self.treasures.keys()}
         self.distances = self.manhattan_distances(self.maps, self.base)
-        self.distances_blocked = self.manhattan_distance_blocked(self.maps, self.base, 'I')
         island_location_frame = [(treasure,
                                   self.min_manhattan_around(self.distances,
                                                             int(self.treasures[treasure][0]),
@@ -163,14 +162,12 @@ class OnePieceProblem(search.Problem):
         for ship in new_state.on_ship.keys():
             treasures_on_ships = treasures_on_ships.union(new_state.on_ship[ship])
         treasures_on_islands_count = len(self.treasures.keys()) - len(treasures_on_ships.union(new_state.collected))
-        return max(self.h_1(node),
-                   self.h_2(node)/(len(treasures_on_ships) + 1),
-                   self.h_bfs(node) / (treasures_on_islands_count + 1))
+        return self.h_2(node)
 
     def h_1(self, node: search.Node):
         new_state = State.from_hashable(node.state)
-        uncollected = set(self.treasures.keys()).difference(
-            set(new_state.collected).union(set(new_state.on_ship)))  # works only on sets
+        uncollected = set(self.treasures.keys()).difference(set(new_state.collected))
+            # set(new_state.collected).union(set(new_state.on_ship)))  # works only on sets
         return float(len(uncollected) / len(new_state.pirateships))
 
     def h_2(self, node: search.Node):
@@ -200,6 +197,9 @@ class OnePieceProblem(search.Problem):
         # else:
         #     frame_distances = [float('inf')]
         return min_distance
+
+    def manhattan_distance_a2b(t1, t2):
+        return abs(t1[0] - t2[0]) + abs(t1[1] - t2[1])
 
     def find_closest_treasures(map, treasures):
         def manhattan_distance(t1, t2):
