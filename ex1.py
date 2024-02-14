@@ -5,6 +5,8 @@ from itertools import product
 from collections import deque
 import json
 from bisect import insort
+from collections import deque
+
 
 
 ids = ["208114744", "206394280"]
@@ -92,6 +94,7 @@ class OnePieceProblem(search.Problem):
                                                             int(self.treasures[treasure][1])))
                                  for treasure in self.treasures.keys()]
         self.island_location_frame_dict = {key: value for (key, value) in island_location_frame}
+        self.bfs_distances_map = self.bfs_distance(initial.get("map"))
 
     """ action activators """
 
@@ -163,7 +166,7 @@ class OnePieceProblem(search.Problem):
         # for ship in new_state.on_ship.keys():
         #     treasures_on_ships = treasures_on_ships.union(new_state.on_ship[ship])
         # treasures_on_islands_count = len(self.treasures.keys()) - len(treasures_on_ships.union(new_state.collected))
-        return max(self.h_1(node), self.h_2(node))
+        return self.h_4(node)
 
     def h_1(self, node: search.Node):
         new_state = State.from_hashable(node.state)
@@ -234,6 +237,25 @@ class OnePieceProblem(search.Problem):
             sum += min_distance + self.distances[treasure_location[0]][treasure_location[1]]
         return sum / (2 * len(new_state.pirateships.keys()))
 
+
+    def h_4(self, node: search.Node):
+        sum = 0
+        location_frame_dict = self.island_location_frame_dict
+        new_state = State.from_hashable(node.state)
+        uncollected_treasures = set(list(self.treasures.keys())).difference(set(new_state.collected))
+        for treasure in uncollected_treasures:
+            if self.treasure_holders[treasure]:
+                treasure_on_ships = [self.min_manhattan_around(self.bfs_distances_map,
+                                                               int(new_state.pirateships[ship][0]),
+                                                               int(new_state.pirateships[ship][1]))
+                                     for ship in self.treasure_holders[treasure]]
+                min_treasure_on_ships = min(treasure_on_ships)
+                location_frame_dict[treasure] = min(location_frame_dict[treasure], min_treasure_on_ships)
+            sum += float(location_frame_dict[treasure])
+        return sum / len(new_state.pirateships.keys())
+
+
+
     def min_manhattan_around(self, distances, row, col):
         frame = self.possible_frame(row, col)
         min_distance = float('inf')
@@ -246,6 +268,33 @@ class OnePieceProblem(search.Problem):
         #     frame_distances = [float('inf')]
         return min_distance
 
+    def bfs_distance(self, map):
+        rows, cols = len(map), len(map[0])
+        distance_map = [[-1 for _ in range(cols)] for _ in range(rows)]
+
+        def neighbors(r, c):
+            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:  # 4-way connectivity
+                nr, nc = r + dr, c + dc
+                if 0 <= nr < rows and 0 <= nc < cols and map[nr][nc] != 'I':
+                    yield nr, nc
+
+        # Initialize BFS queue
+        queue = deque()
+        for r in range(rows):
+            for c in range(cols):
+                if map[r][c] == 'B':
+                    queue.append((r, c, 0))  # Append base cells with distance 0
+                    distance_map[r][c] = 0  # Distance to self is 0
+
+        # BFS to fill distance_map
+        while queue:
+            r, c, dist = queue.popleft()
+            for nr, nc in neighbors(r, c):
+                if distance_map[nr][nc] == -1:  # If not visited
+                    distance_map[nr][nc] = dist + 1
+                    queue.append((nr, nc, dist + 1))
+
+        return distance_map
     def manhattan_distance_a2b(self, t1, t2):
         return abs(t1[0] - t2[0]) + abs(t1[1] - t2[1])
 
