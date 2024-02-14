@@ -157,12 +157,20 @@ class OnePieceProblem(search.Problem):
         """ This is the heuristic. It gets a node (not a state,
         state can be accessed via node.state)
         and returns a goal distance estimate"""
-        # new_state = State.from_hashable(node.state)
-        return self.h_2_blocked(node)
+        new_state = State.from_hashable(node.state)
+        treasures_on_ships = set()
+
+        for ship in new_state.on_ship.keys():
+            treasures_on_ships = treasures_on_ships.union(new_state.on_ship[ship])
+        treasures_on_islands_count = len(self.treasures.keys()) - len(treasures_on_ships.union(new_state.collected))
+        return max(self.h_1(node),
+                   self.h_2(node)/(len(treasures_on_ships) + 1),
+                   self.h_bfs(node) / (treasures_on_islands_count + 1))
 
     def h_1(self, node: search.Node):
         new_state = State.from_hashable(node.state)
-        uncollected = set(self.treasures.keys()).difference(set(new_state.collected))  # works only on sets
+        uncollected = set(self.treasures.keys()).difference(
+            set(new_state.collected).union(set(new_state.on_ship)))  # works only on sets
         return float(len(uncollected) / len(new_state.pirateships))
 
     def h_2(self, node: search.Node):
@@ -180,44 +188,6 @@ class OnePieceProblem(search.Problem):
                 location_frame_dict[treasure] = min(location_frame_dict[treasure], min_treasure_on_ships)
             sum += float(location_frame_dict[treasure])
         return sum / len(new_state.pirateships.keys())
-    def h_2_blocked(self, node: search.Node):
-        sum = 0
-        location_frame_dict = self.island_location_frame_dict
-        new_state = State.from_hashable(node.state)
-        uncollected_treasures = set(list(self.treasures.keys())).difference(set(new_state.collected))
-        for treasure in uncollected_treasures:
-            if self.treasure_holders[treasure]:
-                treasure_on_ships = [self.min_manhattan_around(self.distances_blocked,
-                                                               int(new_state.pirateships[ship][0]),
-                                                               int(new_state.pirateships[ship][1]))
-                                     for ship in self.treasure_holders[treasure]]
-                min_treasure_on_ships = min(treasure_on_ships)
-                location_frame_dict[treasure] = min(location_frame_dict[treasure], min_treasure_on_ships)
-            sum += float(location_frame_dict[treasure])
-        return sum / len(new_state.pirateships.keys())
-    def h_3(self, node: search.Node):
-        sum_of_distances = 0
-        new_state = State.from_hashable(node.state)
-
-        # Collect only the treasures that have not been collected yet
-        uncollected_treasures = {treasure: location for treasure, location in self.treasures.items() if
-                                 treasure not in new_state.collected}
-
-        # Now use this dict to find the closest treasures
-        closest_treasures = self.find_closest_treasures(self.maps, uncollected_treasures)
-
-        for pirateship in new_state.pirateships.keys():
-            # You should handle the cases properly based on the context
-            if new_state.on_ship[pirateship]:
-                if len(new_state.on_ship[pirateship]) < 2:
-
-                    sum_of_distances += min(self.distances[int(new_state.pirateships[pirateship][0])][int(new_state.pirateships[pirateship][1])], int(closest_treasures[pirateship][1]))
-            else:
-
-                sum_of_distances += len(self.maps[0]) 
-
-        return sum_of_distances / len(new_state.pirateships.keys())
-
 
     def min_manhattan_around(self, distances, row, col):
         frame = self.possible_frame(row, col)
@@ -274,34 +244,95 @@ class OnePieceProblem(search.Problem):
 
         return distances
 
-    def manhattan_distance_blocked(self, map, start, blocked):
-        rows, cols = len(map), len(map[0])
-        distances = [[float('inf')] * cols for _ in range(rows)]
-        visited = [[False] * cols for _ in range(rows)]
+    # def manhattan_distance_blocked(self, map, start, blocked):
+    #     rows, cols = len(map), len(map[0])
+    #     distances = [[float('inf')] * cols for _ in range(rows)]
+    #     visited = [[False] * cols for _ in range(rows)]
+    #
+    #     queue = [(start[0], start[1], 0)]  # (row, col, distance)
+    #     distances[start[0]][start[1]] = 0
+    #
+    #     while queue:
+    #         current_row, current_col, current_distance = queue.pop(0)
+    #         visited[current_row][current_col] = True
+    #
+    #         neighbors = [
+    #             (current_row - 1, current_col),
+    #             (current_row + 1, current_col),
+    #             (current_row, current_col - 1),
+    #             (current_row, current_col + 1),
+    #         ]
+    #
+    #         for neighbor_row, neighbor_col in neighbors:
+    #             if 0 <= neighbor_row < rows and 0 <= neighbor_col < cols and not visited[neighbor_row][neighbor_col] and \
+    #                     map[neighbor_row][neighbor_col] != blocked:
+    #                 new_distance = current_distance + 1
+    #                 if new_distance < distances[neighbor_row][neighbor_col]:
+    #                     distances[neighbor_row][neighbor_col] = new_distance
+    #                     queue.append((neighbor_row, neighbor_col, new_distance))
+    #
+    #     return distances
 
-        queue = [(start[0], start[1], 0)]  # (row, col, distance)
-        distances[start[0]][start[1]] = 0
+    def bfs_distance_to_base(self, new_state: State, ship: str):
+        ship_location = new_state.pirateships[ship]
+        # Create initial node
+        initial_node = search.Node(parent=None, state=ship_location)
 
+        # Initialize queue for BFS
+        queue = deque([initial_node])
+
+        # Set to keep track of visited states
+        visited = set()
+
+        # Perform BFS - from here on 'state' refers to location in the map...
         while queue:
-            current_row, current_col, current_distance = queue.pop(0)
-            visited[current_row][current_col] = True
+            # Get the front node from the queue
+            current_node = queue.popleft()
+            current_state = current_node.state
 
-            neighbors = [
-                (current_row - 1, current_col),
-                (current_row + 1, current_col),
-                (current_row, current_col - 1),
-                (current_row, current_col + 1),
-            ]
+            # Check if goal state is reached
+            if self.maps[current_state[0]][current_state[1]] == 'B':
+                return current_node.depth  # Return the distance
 
-            for neighbor_row, neighbor_col in neighbors:
-                if 0 <= neighbor_row < rows and 0 <= neighbor_col < cols and not visited[neighbor_row][neighbor_col] and \
-                        map[neighbor_row][neighbor_col] != blocked:
-                    new_distance = current_distance + 1
-                    if new_distance < distances[neighbor_row][neighbor_col]:
-                        distances[neighbor_row][neighbor_col] = new_distance
-                        queue.append((neighbor_row, neighbor_col, new_distance))
+            # Mark current state as visited
+            visited.add(tuple(current_state))
 
-        return distances
+            # Generate possible next states
+            next_states = [state
+                           for state in self.possible_frame(current_state[0], current_state[1])
+                           if self.maps[state[0]][state[1]] != 'I']
+
+            # Create child nodes for next states
+            for state in next_states:
+                if tuple(state) not in visited:
+                    child_node = search.Node(state=state, parent=current_node)
+                    queue.append(child_node)
+
+        # If goal state is not reachable
+        return float("inf")
+
+        def generate_next_states(current_state):
+            # Example function to generate next possible states
+            next_states = []
+            # Add your logic to generate next states here
+            return next_states
+
+        # Example usage:
+        initial_state = [1, 2, 3]
+        goal_state = [4, 5, 6]
+        goal_node = bfs(initial_state, goal_state)
+
+        if goal_node:
+            # Print the path from initial state to goal state
+            path = []
+            while goal_node:
+                path.append(goal_node.state)
+                goal_node = goal_node.parent
+            path.reverse()
+            print("Path from initial state to goal state:", path)
+        else:
+            print("Goal state is not reachable from the initial state.")
+
 
     """ action providers """
 
@@ -321,7 +352,6 @@ class OnePieceProblem(search.Problem):
             current_index_in_location_array += 1
             new_state.marineships[ship] = (current_index_in_location_array,
                                            location_array)
-            self.marine_pirates_encounter(new_state, location_array[current_index_in_location_array])
 
     def marine_pirates_encounter(self, new_state: State, location: str):
         for pirate in new_state.pirateships.keys():
@@ -357,7 +387,6 @@ class OnePieceProblem(search.Problem):
                     self.treasure_holders[treasure] = self.treasure_holders[treasure].union({ship})
 
         return actions
-
 
     def possible_frame(self, row, col):
         if row == 0:
