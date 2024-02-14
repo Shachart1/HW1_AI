@@ -283,6 +283,7 @@ class OnePieceProblem(search.Problem):
                 if treasure in new_state.on_ship[ship]:
                     if treasure == "treasure_2":
                         test = 5  # TO TEST OUT THE BFS
+
                     sum += self.bfs_distance_to_base(new_state, ship)
         return float(sum) / len(new_state.pirateships.keys())
 
