@@ -156,7 +156,6 @@ def astar_search(problem, h=None):
     states_set = set()
     nodes_count = 1
     problem.initial["num_nodes"] = nodes_count
-
     root = problem.root
     # it is advised in the documentation to use tuples with three elements -
     # the value to sort by, tie breaking value, the object we wish to save in the heap
