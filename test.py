@@ -19,7 +19,7 @@ def main():
     actions = onePiece.actions(onePiece.root.state)
     print(actions)
     print(actions[1])
-    print(search.astar_search(onePiece))
+    print(search.astar_search(onePiece).solution())
 
 if __name__ == '__main__':
     main()
